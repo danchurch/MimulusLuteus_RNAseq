@@ -1,0 +1,99 @@
+## let's get started on the RNA seq pipeline for Mlv
+
+## we want to see what the effects of our RNAi silencing 
+## were in our plants. 
+
+## siRNA silencing works by silencing targeting mRNA after 
+## it leaves the nuclease. So it has been processed into 
+## mature RNA etc. 
+
+## I'm not sure how fast acting RNAi is, but we can assume
+## that in order to have phenotypic effects it is pretty 
+## rapid, and that we see a lower amount of myb5a transcripts
+## floating around from RNAi-transformed petals. 
+
+## I do not know how persistent the fragments from RNAi 
+## are, they may come into play here, but I presume the 
+## the RNAses kick in pretty kick...
+
+## anyway, our most immediate hypothesis is that we will
+## see relatively less abundance of myb5a present in this 
+## petal tissue. We can then hypothesize that this will
+## cascade to lower expression of down stream genes in 
+## the petal anthocyanin pathway. 
+
+## more reading is to be done, I'm just not familiar with 
+## what we think the mimulus petal anthocyanin pathways. 
+## but what we can start to do now is look at our read 
+## qualities. 
+
+## to start off, we need to do some quality control, maybe
+## trim some BPs, drop off the low quality stuff. 
+## fairly familiar territory. 
+
+## Josh's friend Ron still uses fastx for this, I wonder if
+## we have another route, I remember fastx having issues 
+## with plotting newer illumina read sets...
+
+## let's get all fasta files unzipped and into a useful place:
+
+## we'll put them here on the lab mac:
+fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+
+## go to our gz files:
+
+cd /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MlvMnaRNA_raw_compressed
+
+for i in *gz; do
+gunzip < $i > $fastaFolder/${i%.gz}
+done
+
+
+## we'll try to do this in the HTseq python package, following
+## the examples in their tutorials
+
+## https://htseq.readthedocs.io/en/release_0.10.0/tour.html#reading-in-reads
+
+python3
+
+import HTSeq, os, itertools 
+import matplotlib as plt
+import numpy as np
+
+## let's read in our reads:
+
+fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+os.chdir(fastaFolder)
+fastqFile=os.listdir()[0]
+
+fastq = HTSeq.FastqReader(fastqFile)
+
+for read in itertools.islice(fastq, 10):
+    print(read)
+
+## to get average quality at each site:
+
+## make an array as long as the number of bps in our reads:
+
+qualsum = np.zeros( len(read), np.int)
+nreads = 0
+for read in fastq:
+    qualsum += read.qual
+    nreads += 1
+
+qualsum / nreads = avgQuals
+
+## etc. But what we want for tonight is a actually 
+## a htseq script used from the command line:
+
+#! /usr/bin/env bash
+fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+cd $fastaFolder
+
+for i in *; do
+    echo ${i%fastq}_qa.pdf
+    htseq-qa -t fastq --nosplit --outfile ${i%fastq}_qa.pdf $i
+done
+
+
+
