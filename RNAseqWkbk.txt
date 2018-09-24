@@ -56,7 +56,10 @@ done
 
 python3
 
-import HTSeq, os, itertools 
+import HTSeq, os, itertools
+
+import biopython as bio
+
 import matplotlib as plt
 import numpy as np
 
@@ -87,7 +90,9 @@ qualsum / nreads = avgQuals
 ## a htseq script used from the command line:
 
 #! /usr/bin/env bash
+
 fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+
 cd $fastaFolder
 
 for i in *; do
@@ -95,5 +100,98 @@ for i in *; do
     htseq-qa -t fastq --nosplit --outfile ${i%fastq}_qa.pdf $i
 done
 
+
+## worked - get those into our repo? 
+
+## confusing, cause we're working remotely in a git repo but 
+## were in one locally, and there is a version of this log in 
+## both. 
+
+## so keep things separate, I guess. All file updates besides this 
+## log will be from the labcomp and all workbook updates from my 
+## laptop.
+
+## anyway... 
+
+## check our reads for primers/barcodes?
+
+## for sample S1, our barcodes are GTAACTTGGT+AGACTGCGAA
+
+grep GTAACTTGGT $fastaFolder/4956_S1_S26_L005_R1_001.fastq 
+grep AGACTGCGAA $fastaFolder/4956_S1_S26_L005_R1_001.fastq 
+
+## reverse complements
+grep ACCAAGTTAC $fastaFolder/4956_S1_S26_L005_R1_001.fastq ## common, but not at the ends..
+grep TTCGCAGTCT $fastaFolder/4956_S1_S26_L005_R1_001.fastq ## also common, but not at the ends..
+
+## I think we're clear on that. 
+
+## Reads look good. Except the beginnings BPs are lower quality. 
+## but not so bad that we need to trim, I guess. 
+
+## I guess we can take a second look after alignment.
+
+## let's play with hisat2:
+
+curl -O 'ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip'
+
+##################### oops, tomorrow get mac binary ########################################
+## our reference genome is at:
+
+/Users/danthomas/Documents/naiandinus_gen/MnaXMlv/luteus_genome/Mimulus_luteus.fasta
+
+
+genFasta='/Users/danthomas/Documents/naiandinus_gen/MnaXMlv/luteus_genome/Mimulus_luteus.fasta'
+
+## we'll get a local index nearby
+
+refFolder='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome'
+
+cd $refFolder
+
+refGenLink='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome/Mimulus_luteus.fasta'
+
+## don't know if a symlink will do or not...
+ln -s $genFasta $refGenLink
+
+## our HISAT binary is at:
+
+hisatD='/Users/danthomas/hisat2-2.1.0'
+
+## commands for building reference genome:
+
+$hisatD/hisat2-build $genFasta $HISAT2_HOME/example/reference/22_20-21M.snp 22_20-21M_snp
+
+$hisatD/hisat2-build
+
+## and for alignment
+HISAT2_HOME/hisat2 -f -x $HISAT2_HOME/example/index/22_20-21M_snp -U $HISAT2_HOME/example/reads/reads_1.fa -S eg1.sam
+
+## for now, how do we align, and to what?
+
+python3
+
+import HTSeq, os, itertools 
+import matplotlib as plt
+import numpy as np
+
+import biopython 
+
+fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+os.chdir(fastaFolder)
+
+fastqFile=os.listdir()[0]
+
+fastq = HTSeq.FastqReader(fastqFile)
+
+with open('trimmed_' + fastqFile, 'w') as tF:
+    for read in fastq:
+
+
+
+
+
+for read in itertools.islice(fastq, 10):
+    print(read)
 
 
