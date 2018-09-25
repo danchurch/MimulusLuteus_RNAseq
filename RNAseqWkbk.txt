@@ -92,6 +92,7 @@ qualsum / nreads = avgQuals
 #! /usr/bin/env bash
 
 fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+wd="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq"
 
 cd $fastaFolder
 
@@ -133,7 +134,7 @@ grep TTCGCAGTCT $fastaFolder/4956_S1_S26_L005_R1_001.fastq ## also common, but n
 
 ## let's play with hisat2:
 
-curl -O 'ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip'
+curl -O "ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-OSX_x86_64.zip"
 
 ##################### oops, tomorrow get mac binary ########################################
 ## our reference genome is at:
@@ -160,9 +161,41 @@ hisatD='/Users/danthomas/hisat2-2.1.0'
 
 ## commands for building reference genome:
 
-$hisatD/hisat2-build $genFasta $HISAT2_HOME/example/reference/22_20-21M.snp 22_20-21M_snp
+$hisatD/hisat2-build Mimulus_luteus.fasta mllGen 
+## seems to have worked
 
-$hisatD/hisat2-build
+## script to do all of these...
+
+## RNAalignments.sh
+##########################################3
+#! /usr/bin/env bash
+hisatD='/Users/danthomas/hisat2-2.1.0'
+fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
+wd="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq"
+refFolder='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome'
+
+cd $refFolder
+
+for i in $fastaFolder/*; do
+    echo $i
+    aa=${i##*/}  
+    bb=${aa%.*}
+    sa=$bb".sam"
+    $hisatD/hisat2 -x mllGen -U $i -S $sa
+done
+
+##############################################
+
+## to run it:
+
+ssh danthomas@10.4.2.6:/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq 'RNAalignments.sh' 
+
+./RNAalignments.sh | tee RNAalign.log
+
+
+ 
+$hisatD/hisat2 -x mllGen -U
+$hisatD/hisat2-build 
 
 ## and for alignment
 HISAT2_HOME/hisat2 -f -x $HISAT2_HOME/example/index/22_20-21M_snp -U $HISAT2_HOME/example/reads/reads_1.fa -S eg1.sam
