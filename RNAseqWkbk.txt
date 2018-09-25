@@ -189,7 +189,7 @@ done
 
 ## to run it:
 
-ssh danthomas@10.4.2.6: 'cd /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq; ./RNAalignments.sh' 
+ssh danthomas@10.4.2.6 'cd /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq; ./RNAalignments.sh' 
 
 ./RNAalignments.sh | tee RNAalign.log
 
@@ -201,31 +201,9 @@ $hisatD/hisat2-build
 ## and for alignment
 HISAT2_HOME/hisat2 -f -x $HISAT2_HOME/example/index/22_20-21M_snp -U $HISAT2_HOME/example/reads/reads_1.fa -S eg1.sam
 
-## for now, how do we align, and to what?
 
-python3
+## side note: using aspera to upload to SRA:
 
-import HTSeq, os, itertools 
-import matplotlib as plt
-import numpy as np
+ascp -i /Users/danthomas/Documents/RNAi_Mvar_RNAseq/aspera.openssh -QT -l100m -k1 -d /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MlvMnaRNA_raw_compressed/ subasp@upload.ncbi.nlm.nih.gov:uploads/danchurchthomas@gmail.com_NoZoYQba
 
-import biopython 
-
-fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
-os.chdir(fastaFolder)
-
-fastqFile=os.listdir()[0]
-
-fastq = HTSeq.FastqReader(fastqFile)
-
-with open('trimmed_' + fastqFile, 'w') as tF:
-    for read in fastq:
-
-
-
-
-
-for read in itertools.islice(fastq, 10):
-    print(read)
-
-
+ls -l /Users/danthomas/Documents/RNAi_Mvar_RNAseq/aspera.openssh
