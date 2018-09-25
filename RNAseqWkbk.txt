@@ -175,20 +175,21 @@ wd="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq"
 refFolder='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome'
 
 cd $refFolder
+touch align.log
 
 for i in $fastaFolder/*; do
     echo $i
     aa=${i##*/}  
     bb=${aa%.*}
     sa=$bb".sam"
-    $hisatD/hisat2 -x mllGen -U $i -S $sa
+    $hisatD/hisat2 -x mllGen -U $i -S $sa | tee -a align.log
 done
 
 ##############################################
 
 ## to run it:
 
-ssh danthomas@10.4.2.6:/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq 'RNAalignments.sh' 
+ssh danthomas@10.4.2.6: 'cd /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq; ./RNAalignments.sh' 
 
 ./RNAalignments.sh | tee RNAalign.log
 
