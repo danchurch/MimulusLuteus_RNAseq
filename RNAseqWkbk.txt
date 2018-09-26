@@ -175,6 +175,7 @@ wd="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq"
 refFolder='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome'
 
 cd $refFolder
+
 touch align.log
 
 for i in $fastaFolder/*; do
@@ -207,3 +208,65 @@ HISAT2_HOME/hisat2 -f -x $HISAT2_HOME/example/index/22_20-21M_snp -U $HISAT2_HOM
 ascp -i /Users/danthomas/Documents/RNAi_Mvar_RNAseq/aspera.openssh -QT -l100m -k1 -d /Users/danthomas/Documents/RNAi_Mvar_RNAseq/MlvMnaRNA_raw_compressed/ subasp@upload.ncbi.nlm.nih.gov:uploads/danchurchthomas@gmail.com_NoZoYQba
 
 ls -l /Users/danthomas/Documents/RNAi_Mvar_RNAseq/aspera.openssh
+
+
+## okay, so now what? How can we check the alignments?
+
+grep "@SQ" 4956_S6_S31_L005_R1_001.sam | wc -l
+## don't do that. but SQ should indicate our scaffolds
+
+## how do we find the unaligned reads?
+
+## sams live here:
+samDir='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/SAMs'
+bamDir='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/BAMs'
+
+## go to BAM, sorting as we go
+
+cd $samDir
+
+for i in *; do
+    echo $i "   " ${i/\.sam/_sorted\.bam}
+    samtools sort -O bam -T "$file" -o $bamDir/${i/\.sam/_sorted\.bam} $i
+done
+
+## Works...
+
+## how do we find the level of reads aligned vs. non?
+
+samtools view -f u 4956_S1_S26_L005_R1_001_sorted.bam > notMappedS1.sam
+
+## interesting. but moving on, we have a gff file from coge. Can we use this
+## to get counts for our transcripts/genes?
+
+## Ron's final step is to use HTSeq to generate count data:
+
+htseq-count -f bam -i gene_id -t gene -s no "$file" $GFF > "$outfile" 
+
+## I have a lot of questions here, but let's try to get something like this
+## running before I dig into the lit a little deeper to answer my questions,
+## because this might take some time:
+
+
+## bam directory is:
+bamDir=/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/BAMs
+## our gff file from CoGe is symlinked here:
+GFF=/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome/Mimulus_luteus_complete_w_single_exons_standard_renamed_genes.gff
+
+cd $bamDir
+
+for i in  $bamDir/*; do 
+    echo $i "   " ${i/sorted\.bam/HTSeqCounts.txt} 
+    htseq-count -f bam -t exon -i Parent -s no $i $GFF \
+            > ${i/sorted\.bam/HTSeqCounts.txt} 
+done
+
+## let's try one:
+
+
+
+
+
+
+htseq-count --help
+
