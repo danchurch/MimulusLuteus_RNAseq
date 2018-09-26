@@ -261,7 +261,11 @@ for i in  $bamDir/*; do
             > ${i/sorted\.bam/HTSeqCounts.txt} 
 done
 
-## let's try one:
+## that's saved as 
+
+makeCounts.sh
+
+
 
 
 
