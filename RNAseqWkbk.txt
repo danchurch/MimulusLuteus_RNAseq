@@ -279,13 +279,38 @@ echo $i >> samReport.log
 samtools flagstat $i >> samReport.log
 done
 
-samtools flagstat 4956_S1_S26_L005_R1_001.sam ## 76.86 mapped...so what's wrong?
+## the gff is failing us here, there aren't real annotations in there. 
+## not sure if that's the problem, but it's a start...
 
+## try out the wm cluster
 
+wmStat ## my alias for the stats server that we gotta go through to get to the cluster
 
+## from, let's try the hurricane/whirlwind subcluster
 
+ssh dthomas01@hurricane.sciclone.wm.edu
 
+## not sure how much space I get, but this is home
+## /sciclone/home20/dthomas01
 
+## we loaded the luteus genome there, can we also get hisat and cufflinks binaries in there?
+## and will it let me put the relatively large index files in there?
 
+wget ftp://ftp.ccb.jhu.edu/pub/infphilo/hisat2/downloads/hisat2-2.1.0-Linux_x86_64.zip
+unzip hisat2-2.1.0-Linux_x86_64.zip
+
+## wait on cufflinks. Can we run the indexing as a job? 
+
+## buildG.sh
+#############################
+#!usr/env/tcsh
+#PBS -l walltime=8:00:00
+#PBS -N buildG
+#PBS -j oe
+#PBS -M thomasdc@whitman.edu
+
+cd /sciclone/home20/dthomas01
+
+/sciclone/home20/dthomas01/hisat2-2.1.0/hisat2-build mimLuteus_genome.fa mllGen
 
 
