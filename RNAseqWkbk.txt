@@ -169,10 +169,10 @@ $hisatD/hisat2-build Mimulus_luteus.fasta mllGen
 ## RNAalignments.sh
 ##########################################3
 #! /usr/bin/env bash
-hisatD='/Users/danthomas/hisat2-2.1.0'
-fastaFolder="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/Mlv_raw_unzipped"
-wd="/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq"
-refFolder='/Users/danthomas/Documents/RNAi_Mvar_RNAseq/MimulusLuteus_RNAseq/lutRefGenome'
+
+hisatD='/sciclone/data10/dthomas01/Mll_hisat'
+fastaFolder='/sciclone/data10/dthomas01/MimRNAseq_fastq'
+refFolder='/sciclone/data10/dthomas01/Mll_hisat'
 
 cd $refFolder
 
@@ -183,7 +183,7 @@ for i in $fastaFolder/*; do
     aa=${i##*/}  
     bb=${aa%.*}
     sa=$bb".sam"
-    $hisatD/hisat2 -x mllGen -U $i -S $sa | tee -a align.log
+    $hisatD/hisat2 -x mllGen -U $i -S $sa --dta | tee -a align.log
 done
 
 ##############################################
@@ -353,12 +353,8 @@ cd /sciclone/data10/dthomas01
 
 /sciclone/home20/dthomas01/hisat2-2.1.0/hisat2-build mimLuteus_genome.fa mllGen
 
+## did that work?
 ## then run the hisat2 
-
-
-
-
-
 
 
 
