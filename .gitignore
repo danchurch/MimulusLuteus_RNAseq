@@ -3,3 +3,5 @@
 *.ht2
 *sam
 BAMs/
+SAMs
+.gitignore
