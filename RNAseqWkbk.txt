@@ -356,5 +356,89 @@ cd /sciclone/data10/dthomas01
 ## did that work?
 ## then run the hisat2 
 
+#########################################
+
+## 7 months later...
+
+## been out of this so long, going to start over. 
+
+## where are our binaries for hisat2?
+
+cd /sciclone/data10/dthomas01
+
+wget http://ccb.jhu.edu/software/hisat2/dl/hisat2-2.1.0-Linux_x86_64.zip
+
+## our genome is where..?
+
+mllGen='/sciclone/data10/dthomas01/rnaseq/mimLuteus_genome.fa'
+mllGFF='/sciclone/data10/dthomas01/rnaseq/Mimulus_luteus_complete_w_single_exons_standard_renamed_genes.gff'
+
+## job for the day, align our reads to this genome?
+
+## to do this, need to index the genome:
+
+## binaries for hisat here:
+hisat2="/sciclone/data10/dthomas01/hisat2-2.1.0/"
+
+## commands for building reference genome:
+
+qsub -I -l walltime=3:0:0 -l nodes=1:ppn=4
+
+## script for this:
+
+## buildHiSatInd.sh
+##################################################
+#!/usr/bin/env bash
+
+#PBS -l walltime=6:00:00
+#PBS -N buildHiSatIndices
+#PBS -l nodes=1:ppn=4
+
+cd /sciclone/data10/dthomas01/rnaseq
+
+hisat2="/sciclone/data10/dthomas01/hisat2-2.1.0/"
+mllGen='/sciclone/data10/dthomas01/rnaseq/mimLuteus_genome.fa'
+mllHiSatInd='/sciclone/data10/dthomas01/rnaseq/mllHiSat2Indices'
+
+$hisat2/hisat2-build $mllGen mllInd
+
+## 5488962
+
+qstat 5488962
+
+## huh, weird walltime error, didn't I ask for 6 hours?
+
+## anyway, run interactively, works fine. 
+
+## can we start our alignment?
+
+$hisat2"/hisat2" -h | less
+
+$hisat2"/hisat2" -h 
+
+qsub -I -l walltime=3:0:0 -l nodes=1:ppn=4
+
+bash
+
+cd /sciclone/data10/dthomas01/rnaseq
+
+hisat2="/sciclone/data10/dthomas01/hisat2-2.1.0"
+mllGen='/sciclone/data10/dthomas01/rnaseq/mimLuteus_genome.fa'
+mllHiSatInd='/sciclone/data10/dthomas01/rnaseq/mllHiSat2Indices'
+rnaFastq='/sciclone/data10/dthomas01/rnaseq/MimRNAseq_fastq'
+aligned2Mll='/sciclone/data10/dthomas01/rnaseq/aligned2Mll'
+
+cd $rnaFastq
+
+for i in *; do
+    echo $i
+    j=${i/.fastq/_aligned.sam} 
+    echo $j
+    $hisat2/hisat2 -x $mllHiSatInd"/mllInd" -U $i -S $aligned2Mll/$j
+    echo $aligned2Mll/$j done.
+done
+
+$hisat2/hisat2 -x $mllHiSatInd"/mllInd" -U $i -S $aligned2Mll/$j
+
 
 
