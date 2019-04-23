@@ -420,6 +420,11 @@ qsub -I -l walltime=3:0:0 -l nodes=1:ppn=4
 
 bash
 
+#!/usr/bin/env bash
+#PBS -l walltime=8:00:00
+#PBS -N rnaAlignmentsApr23.1030am
+#PBS -l nodes=1:ppn=8
+
 cd /sciclone/data10/dthomas01/rnaseq
 
 hisat2="/sciclone/data10/dthomas01/hisat2-2.1.0"
@@ -434,11 +439,209 @@ for i in *; do
     echo $i
     j=${i/.fastq/_aligned.sam} 
     echo $j
-    $hisat2/hisat2 -x $mllHiSatInd"/mllInd" -U $i -S $aligned2Mll/$j
-    echo $aligned2Mll/$j done.
+    #$hisat2/hisat2 -p 8 -x $mllHiSatInd"/mllInd" -U $i -S $aligned2Mll/$j 
+    echo $aligned2Mll/$j
 done
 
-$hisat2/hisat2 -x $mllHiSatInd"/mllInd" -U $i -S $aligned2Mll/$j
+5491877
 
+qstat 5491877
+
+cd $aligned2Mll
+
+## the multithreading is key, "-p 8". With the threads, these alignments are quick, 5-15 min each. 
+
+## but not sure what % are aligning, etc... where is my stdout going?
+
+## hopefully it will be in the final logs...
+
+## here:
+
+
+4956_S1_S26_L005_R1_001.fastq
+34689923 reads; of these:
+  34689923 (100.00%) were unpaired; of these:
+    12012311 (34.63%) aligned 0 times
+    13350403 (38.48%) aligned exactly 1 time
+    9327209 (26.89%) aligned >1 times
+65.37% overall alignment rate
+
+4956_S2_S27_L005_R1_001.fastq
+42252108 reads; of these:
+  42252108 (100.00%) were unpaired; of these:
+    8300231 (19.64%) aligned 0 times
+    23623041 (55.91%) aligned exactly 1 time
+    10328836 (24.45%) aligned >1 times
+80.36% overall alignment rate
+
+4956_S3_S28_L005_R1_001.fastq
+47528395 reads; of these:
+  47528395 (100.00%) were unpaired; of these:
+    9437199 (19.86%) aligned 0 times
+    26729022 (56.24%) aligned exactly 1 time
+    11362174 (23.91%) aligned >1 times
+80.14% overall alignment rate
+
+4956_S4_S29_L005_R1_001.fastq
+46447830 reads; of these:
+  46447830 (100.00%) were unpaired; of these:
+    8606762 (18.53%) aligned 0 times
+    26789583 (57.68%) aligned exactly 1 time
+    11051485 (23.79%) aligned >1 times
+81.47% overall alignment rate
+
+4956_S5_S30_L005_R1_001.fastq
+30707029 reads; of these:
+  30707029 (100.00%) were unpaired; of these:
+    7086435 (23.08%) aligned 0 times
+    16737022 (54.51%) aligned exactly 1 time
+    6883572 (22.42%) aligned >1 times
+76.92% overall alignment rate
+
+4956_S6_S31_L005_R1_001.fastq
+48989597 reads; of these:
+  48989597 (100.00%) were unpaired; of these:
+    9337600 (19.06%) aligned 0 times
+    28206252 (57.58%) aligned exactly 1 time
+    11445745 (23.36%) aligned >1 times
+80.94% overall alignment rate
+
+4956_S7_S32_L005_R1_001.fastq
+70189878 reads; of these:
+  70189878 (100.00%) were unpaired; of these:
+    12849144 (18.31%) aligned 0 times
+    41001725 (58.42%) aligned exactly 1 time
+    16339009 (23.28%) aligned >1 times
+81.69% overall alignment rate
+
+## the first sample is our naiandinus sample, so no surprise it
+## didn't align well. 
+
+## in the meantime, can some of these reads be annotated? 
+
+## let's go with stringtie. Installation...
+
+## binary off the site:
+
+cd /sciclone/data10/dthomas01
+
+wget http://ccb.jhu.edu/software/stringtie/dl/stringtie-1.3.5.Linux_x86_64.tar.gz
+
+tar -xf stringtie-1.3.5.Linux_x86_64.tar.gz
+
+## we need to sort these sams and convert to bam first. Do we have samtools?
+
+## these need the hts library
+## local install of hts, missing a library that you need for crams, I guess:
+
+#git clone https://github.com/samtools/htslib.git
+./configure --prefix=$PWD --disable-lzma
+## so our binaries for the hts library are:
+/sciclone/data10/dthomas01/htslib/bin
+
+## do we need to add these to our path?
+
+
+## the actual samtools:
+#git clone https://github.com/samtools/samtools.git
+
+## binaries are here:
+/sciclone/data10/dthomas01/samtools/bin
+
+export PATH=/sciclone/data10/dthomas01/samtools/bin:$PATH
+
+## try sorting one of our sam files:
+
+#!/usr/bin/env bash
+#PBS -l walltime=8:00:00
+#PBS -N sams2Bams
+#PBS -l nodes=1:ppn=8
+
+export PATH=/sciclone/data10/dthomas01/samtools/bin:$PATH
+
+## sams are here:
+
+sams='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/sam'
+bams='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/bam'
+
+for i in $sams/*; do
+    echo $i
+    j=${i/aligned.sam/aligned_sorted.bam}
+    k=${j/sam/bam}
+    samtools sort -@ 8 -o $k $i
+    echo $k
+done
+
+###########################################################33
+
+qstat 5492174
+
+## i think that worked...
+## the next step is to assemble the transcripts.. in stringtie
+
+## we could use our gff here? is there are benefit to doing 
+## this? I know very little about this gff file, so skip this 
+## for the moment. 
+
+#!/usr/bin/env bash
+#PBS -l walltime=6:00:00
+#PBS -N combineTrans
+#PBS -l nodes=1:ppn=8
+
+cd /sciclone/data10/dthomas01
+
+export PATH=/sciclone/data10/dthomas01/stringtie:$PATH
+
+bams='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/bam'
+assembledTranscripts='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts'
+
+for i in $bams/*; do
+    echo $i
+    j=$(basename ${i/aligned_sorted.bam/transcripts.gtf})
+    k=$assembledTranscripts"/"$j
+    stringtie -p 8 -o $k $i
+    echo $k
+done
+
+qstat 5492536
+
+## seems to be working. The next step is merge these, again
+## using stringtie:
+
+
+##################################
+#!/usr/bin/env bash
+#PBS -l walltime=6:00:00
+#PBS -N combineTrans
+#PBS -l nodes=1:ppn=8
+
+export PATH=/sciclone/data10/dthomas01/stringtie:$PATH
+
+assembledTranscripts='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts'
+
+mergedTranscripts='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/mergedTranscripts.gtf'
+
+mergelist='/sciclone/home20/dthomas01/mergelist.txt'
+
+cd $assembledTranscripts
+
+stringtie --merge -p 8 -o $mergedTranscripts $mergelist
+
+##############
+
+## mergelist.txt, a list of assembled transcripts to be combined 
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S1_S26_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S2_S27_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S3_S28_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S4_S29_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S5_S30_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S6_S31_L005_R1_001_transcripts.gtf
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assembledTranscripts/4956_S7_S32_L005_R1_001_transcripts.gtf
+
+qsub combineTrans.sh
+
+qstat 5492600
+
+## seems to have worked. Check it out more closely tomorrow. 
 
 
