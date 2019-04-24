@@ -764,7 +764,57 @@ https://informatics.fas.harvard.edu/differential-expression-with-deseq2.html
 
 ## oh, and we need to install deseq2
 
+## back on home computer
+
 BiocManager::install('DESeq2')
 
 
-## 
+## how do we convert the gtf files to csvs in the right format?
+
+## the stringtie folks have a python2.7 script for getting the 
+## raw reads and gene names into a format for deseq2...
+
+## protect our originals..
+cd /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/abundances
+for i in *; do
+    echo $i
+    chmod 444 $i
+done
+
+cd /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq
+
+## does it still work?
+
+wget https://ccb.jhu.edu/software/stringtie/dl/prepDE.py
+
+prepDE="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/prepDE.py"
+abundances="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/abundances"
+
+$prepDE -h
+
+## sample_lst.txt
+4956_S1_S26_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S1_S26_L005_R1_001_abundances.gtf
+/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/abundances/4956_S1_S26_L005_R1_001_abundances.gtf
+4956_S2_S27_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S2_S27_L005_R1_001_abundances.gtf
+4956_S3_S28_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S3_S28_L005_R1_001_abundances.gtf
+4956_S4_S29_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S4_S29_L005_R1_001_abundances.gtf
+4956_S5_S30_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S5_S30_L005_R1_001_abundances.gtf
+4956_S6_S31_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S6_S31_L005_R1_001_abundances.gtf
+4956_S7_S32_L005_R1_001 /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/4956_S7_S32_L005_R1_001_abundances.gtf
+
+$prepDE -i sample_lst.txt
+
+## can R read this?
+
+R
+
+transCounts <- read.csv('transcript_count_matrix.csv')
+rownames(transCounts) <- transCounts$transcript_id
+transCounts$transcript_id <- NULL
+colnames(transCounts) <- c( "MnaWT", "MlvWT", "MlvWT", "MlvWT", "Vr1-1a", "Vr1-3a", "Vr1-5")
+
+condition <- c('MnaWT','WT','WT','WT','RNAi','RNAi','RNAi')  
+
+colData <- data.frame(row.names=colnames(transCounts), condition=as.factor(condition))
+
+colData
