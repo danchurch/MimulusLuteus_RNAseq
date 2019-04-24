@@ -644,4 +644,127 @@ qstat 5492600
 
 ## seems to have worked. Check it out more closely tomorrow. 
 
+## what's next? 
 
+## there is a step for viewing some transcript statistics using an annotated genome
+## to do this we need to install gffcompare
+
+cd /sciclone/data10/dthomas01
+
+## git repo here:
+
+git clone https://github.com/gpertea/gffcompare.git
+
+
+
+./configure --prefix=$PWD  ## no config file. Confused...
+
+make release
+
+## huh, not working. use intel compiler?
+
+## csh
+setenv CC icc
+
+
+make release
+
+## nope...ugh. 
+
+## binaries somewhere?
+
+wget http://ccb.jhu.edu/software/stringtie/dl/gffcompare-0.11.2.Linux_x86_64.tar.gz
+
+## try these out:
+
+qsub -I -l walltime=1:0:0 -l nodes=1:ppn=4
+bash
+export PATH="/sciclone/data10/dthomas01/gffcompare":$PATH
+cd /sciclone/data10/dthomas01/
+refGff='/sciclone/data10/dthomas01/rnaseq/Mimulus_luteus_complete_w_single_exons_standard_renamed_genes.gff'
+assTrans='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/mergedTranscripts.gtf'
+
+gffcompare $refGff $assTrans -G
+
+## what can we learn from these statistics?
+
+less $assTrans
+ 
+wc -l $assTrans ## 401,144 lines
+
+grep "transcript\b" $assTrans | wc -l ## 60,663 transcripts
+
+## I guess to find the the sequences for these we have to 
+## go back to our genome using 
+
+## so we may have to find all genes of interest manually, 
+
+## but we gotta do some more curation first. 
+
+## how do we use our gffcompare table to review the quality of
+## the transcript assembly?
+
+## we can charge ahead and come back to this? 
+
+## let's try the next step, maybe come back to this. 
+
+## string tie can create transcript abundance tables for us:
+## we go back to the individual sample alignments to 
+## estimate their respective abundances
+
+qsub -I -l walltime=1:0:0 -l nodes=1:ppn=4
+
+## estimateAbund.sh
+
+#######################################
+#!/usr/bin/env bash
+#PBS -l walltime=6:00:00
+#PBS -N estimateAbund
+#PBS -l nodes=1:ppn=8
+
+export PATH=/sciclone/data10/dthomas01/stringtie:$PATH
+
+cd /sciclone/data10/dthomas01/
+
+assTrans='/sciclone/data10/dthomas01/rnaseq/aligned2Mll/mergedTranscripts.gtf'
+bams="/sciclone/data10/dthomas01/rnaseq/aligned2Mll/bam"
+abundances="/sciclone/data10/dthomas01/rnaseq/aligned2Mll/abundances"
+
+for i in $bams/*; do 
+    j=$(basename $i)
+    k=${j/_aligned_sorted.bam/_abundances.gtf}
+    l=$abundances/$k
+    echo $i
+    stringtie -e -B -p 8 -G $assTrans -o $l $i
+    echo $l
+done
+
+#########################
+
+qsub estimateAbund.sh
+
+qstat 5494776
+
+#qdel 5494767
+
+ls -ltr $abundances
+
+## seems to be working
+
+find . -mmin -10
+
+## are these files small enough to work with locally?
+
+## let's use this tutorial for deseq2 and first visualizations
+
+https://informatics.fas.harvard.edu/differential-expression-with-deseq2.html
+
+## but we need to convert our gtf files from stringtie to 
+## the dataframe that DESeq2 needs. 
+
+## oh, and we need to install deseq2
+
+BiocManager::install('DESeq2')
+
+
+## 
