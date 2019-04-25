@@ -808,13 +808,198 @@ $prepDE -i sample_lst.txt
 
 R
 
+library('DESeq2')
+
 transCounts <- read.csv('transcript_count_matrix.csv')
 rownames(transCounts) <- transCounts$transcript_id
 transCounts$transcript_id <- NULL
-colnames(transCounts) <- c( "MnaWT", "MlvWT", "MlvWT", "MlvWT", "Vr1-1a", "Vr1-3a", "Vr1-5")
+colnames(transCounts) <- c( "MnaWT", "MlvWT1", "MlvWT2", "MlvWT3", "Vr1-1a", "Vr1-3a", "Vr1-5")
 
-condition <- c('MnaWT','WT','WT','WT','RNAi','RNAi','RNAi')  
+condition <- factor(c('MnaWT','WT','WT','WT','RNAi','RNAi','RNAi'))
 
-colData <- data.frame(row.names=colnames(transCounts), condition=as.factor(condition))
+colData <- data.frame(row.names=colnames(transCounts), condition)
 
-colData
+
+
+## okay, where were we?
+## we need a sample metadata dataframe, rownames are samples, colname is condition, cells are 
+## 
+
+dataset <- DESeqDataSetFromMatrix(countData = transCounts,
+                                  colData = colData,
+                                  design = ~condition)
+
+
+dds <- DESeq(dataset)
+
+result <- results(dds, contrast=c('condition','RNAi','WT'))
+
+## how many NA's in there?
+
+all(complete.cases(result)) ## nope
+
+dim(result) ##60663 rows (transcripts)
+
+sum(complete.cases(result)) ## 59056 rows
+
+## subset to just these:
+result <- result[complete.cases(result),] 
+
+summary(result)
+
+n = 50
+resOrdered <- result[order(result$padj),]
+
+topResults <- rbind( resOrdered[ resOrdered[,'log2FoldChange'] > 0, ][1:n,], 
+                    resOrdered[ resOrdered[,'log2FoldChange'] < 0, ][n:1,] )
+
+## get the top five positive results and top five negative fold change
+topResults[c(1:5,(2*n-4):(2*n)), c('baseMean','log2FoldChange','padj')]
+
+DataFrame with 10 rows and 3 columns
+                      baseMean    log2FoldChange                  padj
+                     <numeric>         <numeric>             <numeric>
+MSTRG.22369.2 808.408049265504  4.97349335711349 3.05783218191832e-231
+MSTRG.10389.1 210.300750645409  2.11990117751604  1.02462938784332e-60
+MSTRG.18771.1  79.304947768443  4.71856708983969  1.46554719251551e-38
+MSTRG.8228.2  428.247327578308  3.05814417141936   6.3391652694216e-30
+MSTRG.23612.1 535.660504583424   1.1377477945568  4.97546278960707e-28
+
+MSTRG.16681.2  164.92961687344 -2.46818749285691  4.60887571672833e-22
+MSTRG.10536.1  447.27018080416 -10.9125241357172  7.04505851791907e-25
+MSTRG.1459.2  62.8324902591117 -5.92580139853354  7.04505851791907e-25
+MSTRG.35081.3 125.056631316517 -5.99527842655793  1.28302650522368e-44
+MSTRG.22369.1 1072.51388274813 -1.58373854296801  8.23160552817666e-74
+
+
+## neat. Wish I knew what these were. Go through the graphics, then 
+## start figuring out what they are. 
+
+DESeq2::plotMA(result, main='', ylim=c(-2,2))
+
+rld <- rlogTransformation(dds, blind=TRUE)
+
+
+plotPCA(rld)
+
+## interesting, but our Mna is throwing things off. Rerun the above without it?
+
+###################### exclude Mna ##########################
+
+## make a df of transcript abundances without Mna:
+transCounts <- read.csv('transcript_count_matrix.csv')
+rownames(transCounts) <- transCounts$transcript_id
+transCounts$transcript_id <- NULL
+colnames(transCounts) <- c( "MnaWT", "MlvWT1", "MlvWT2", "MlvWT3", "Vr1-1a", "Vr1-3a", "Vr1-5")
+transCounts$MnaWT <- NULL
+## new metadata:
+condition <- factor(c('WT','WT','WT','RNAi','RNAi','RNAi'))
+colData <- data.frame(row.names=colnames(transCounts), condition)
+## the rest should be the same:
+dataset <- DESeqDataSetFromMatrix(countData = transCounts,
+                                  colData = colData,
+                                  design = ~condition)
+dds <- DESeq(dataset)
+result <- results(dds, contrast=c('condition','RNAi','WT'))
+
+## how many NA's in there?
+dim(result) ##60663 rows (transcripts)
+sum(complete.cases(result)) ## 56499 rows, 
+## makes sense, we took out all the ones unique to naiandinus
+## subset to just these:
+result <- result[complete.cases(result),] 
+
+summary(result) 
+
+n = 50
+resOrdered <- result[order(result$padj),]
+topResults <- rbind( resOrdered[ resOrdered[,'log2FoldChange'] > 0, ][1:n,], 
+                    resOrdered[ resOrdered[,'log2FoldChange'] < 0, ][n:1,] )
+
+## get the top five positive results and top five negative fold change
+topResults[c(1:5,(2*n-4):(2*n)), c('baseMean','log2FoldChange','padj')]
+
+                      baseMean    log2FoldChange                  padj
+                     <numeric>         <numeric>             <numeric>
+MSTRG.22369.2 814.146546928579  4.97604228594277 2.60170561083407e-164
+MSTRG.10389.1 258.334129805738  2.12480593969706  6.18833008812639e-51
+MSTRG.18771.1   106.4966317714  4.72536387399828  8.20027800966372e-36
+MSTRG.8228.2  442.390287599968  3.06370210844173  1.72410437851371e-24
+MSTRG.14389.3 271.426760012938  3.17190193926194  2.52687272135201e-23
+
+MSTRG.32844.3 264.701442504338 -11.4743123211698  2.23417283046055e-18
+MSTRG.1459.2  84.8556019172276 -5.92299780622723  5.79492419163712e-23
+MSTRG.10536.1 604.102956038344 -10.9058507515376  1.82466684442044e-24
+MSTRG.35081.3 168.933018446597 -5.99073448074947  9.98137022154089e-41
+MSTRG.22369.1 1398.79313288278 -1.57996227149425  2.09490775948335e-56
+
+## mostly the same, as before
+## at least for the top 4 transcripts
+
+DESeq2::plotMA(result, main='', ylim=c(-2,2))
+
+png("overallMAplot.png", width=600)
+DESeq2::plotMA(result, main='', ylim=c(-4,4))
+dev.off()
+
+DESeq2::plotMA(result, main='')
+
+rld <- rlogTransformation(dds, blind=TRUE)
+
+rld.pca <- prcomp(rld)
+
+png('overallTransPCA.png')
+plotPCA(rld)
+dev.off()
+
+## how do we get our loadings, etc, to figure out what's important here?
+## not sure
+
+## but we can look at some individual genes here:
+plotCounts(dds, gene=which.min(result$padj), intgroup="condition")
+
+plotCounts(dds, gene="MSTRG.22369.2", intgroup="condition")
+
+## our most important upregged transcript is:
+MSTRG.22369.2
+
+resOrderedbychange <- result[order(result$log2FoldChange),]
+topResultsbyChange <- rbind( resOrderedbychange[1:5,],  
+        resOrderedbychange[nrow(resOrderedbychange)-5:nrow(resOrderedbychange),])
+topResultsbyChange
+
+topResultsbyChange[c(1:5,(2*n-4):(2*n)), c('baseMean','log2FoldChange','padj')]
+
+topResults[c(1:5,(2*n-4):(2*n)), c('baseMean','log2FoldChange','padj')]
+
+
+## looked at this way (foldchange), and not by pvalue...
+## our main downreg is MSTRG.7537.1 :
+
+plotCounts(dds, gene="MSTRG.7537.1", intgroup="condition")
+
+## but the story there is confusing, one WT sample is expressed
+## at the same low level as the transformed samples
+
+## huh, same here:
+plotCounts(dds, gene="MSTRG.7925.4", intgroup="condition")
+
+## so maybe it is best to go by statistical confidence, to find the clearer
+## stories?
+
+svg("MSTRG.22369.1.svg")
+plotCounts(dds, gene="MSTRG.22369.1", intgroup="condition")
+dev.off()
+
+
+
+
+data(iris)
+head(iris, 3)
+# log transform 
+log.ir <- log(iris[, 1:4])
+ir.species <- iris[, 5]
+ir.pca <- prcomp(log.ir,
+                 center = TRUE,
+                 scale. = TRUE) 
+
