@@ -809,6 +809,7 @@ $prepDE -i sample_lst.txt
 R
 
 library('DESeq2')
+library('RColorBrewer')
 
 transCounts <- read.csv('transcript_count_matrix.csv')
 rownames(transCounts) <- transCounts$transcript_id
@@ -994,12 +995,32 @@ dev.off()
 
 
 
+hmcol <- brewer.pal(11,'RdBu')
+nCounts <- counts(dds, normalized=TRUE)
+## that's a good way to get our normalized counts out, for pcas?
+
+#rld <- rlogTransformation(dds, blind=TRUE)
+
+aa <- counts(rld)
+
+str(rld)
+
+
+png("heatmap.png")
+heatmap(as.matrix(nCounts[ row.names(topResults), ]), Rowv = NA, col = hmcol, mar = c(8,2))
+dev.off()
+
+
 data(iris)
 head(iris, 3)
+
 # log transform 
 log.ir <- log(iris[, 1:4])
 ir.species <- iris[, 5]
 ir.pca <- prcomp(log.ir,
                  center = TRUE,
-                 scale. = TRUE) 
+                 scale. = TRUE)
+
+## tomorrow - how do we annotate our transcripts?
+
 
