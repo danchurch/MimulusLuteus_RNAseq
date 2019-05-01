@@ -1024,3 +1024,328 @@ ir.pca <- prcomp(log.ir,
 ## tomorrow - how do we annotate our transcripts?
 
 
+## it tomorrow today. Umm, let's check that gff file of our genome again
+
+gff='/sciclone/home20/dthomas01/data10/rnaseq/Mimulus_luteus_complete_w_single_exons_standard_renamed_genes.gff'
+
+grep -i "myb" $gff > mybs_lutgenome.txt
+
+## there are a lot of mybs in there:
+wc mybs_lutgenome.txt -l ## 7571 
+
+
+grep "MYB"  mybs_lutgenome.txt 
+
+grep "MYB05"  mybs_lutgenome.txt 
+
+grep "MYB05"  mybs_lutgenome.txt | wc -l ## ~myb5 hits are plentiful
+
+## but these are blast hits to someone else's myb5
+grep "MYB0[1-5]"  mybs_lutgenome.txt | wc -l ## all annotated as the same, myb5 in snapdragon
+
+
+grep "MYB02"  mybs_lutgenome.txt 
+
+
+## other genes? CHS? 
+
+grep -i "CHS"  mybs_lutgenome.txt 
+
+grep  -i "F3H"  mybs_lutgenome.txt 
+
+## so, I think we can't use the gff genome as a resource for finding mybs. 
+
+## so... 
+
+## we need two things here. 
+
+## 1) a set of reference sequences to search. These are ideally 
+## highly curated sequences of known function in the anthocyanin
+## pathway
+
+## 2) A set of unidentified transcript sequences to identify by
+## blasting the above set of reference sequences. 
+
+## Where do we get our sequences for #1?
+
+## myb gene sequences from lab data
+## anthocyanin pathway on kegg site
+
+## arielle has pointed me to the m. guttatus genome here:
+
+https://phytozome.jgi.doe.gov/pz/portal.html#!info?alias=Org_Mguttatus
+
+## docs here on download using api
+https://genome.jgi.doe.gov/portal/help/download.jsf#api
+## the jgi portal API docs say use curl:
+
+cd /sciclone/data10/dthomas01/rnaseq/mimguttatus_genome
+
+curl 'https://signon-old.jgi.doe.gov/signon/create' --data-urlencode 'login=dthomas@uoregon.edu' --data-urlencode 'password=Yamaha82!' -c cookies > /dev/null 
+
+curl 'https://genome.jgi.doe.gov/portal/ext-api/downloads/get-directory?organism=Mguttatus' -b cookies > files.xml
+
+curl 'https://genome.jgi.doe.gov/portal/ext-api/downloads/get-directory?organism=PhytozomeV10' -b cookies > files.xml
+
+## beh, it's a mess. just downloading it onto my machine.
+
+scp /home/daniel/Documents/cooley_lab/Mguttatus_download.zip dthomas01@stat.wm.edu:/home/dthomas01/
+scp Mguttatus_download.zip dthomas01@hurricane.sciclone.wm.edu:/sciclone/data10/dthomas01/rnaseq/mimguttatus_genome/
+
+## there's a lot in the genome, what do we use to align our transcripts,
+## and how does this look specifically? 
+
+## locally, genome stuff is here:
+
+gutgen='/home/daniel/Documents/cooley_lab/Mguttatus/v2.0'
+
+## annotation info file is helpful. 
+## seems like we'll want to use a gapped 
+## mapper, and map our transcripts to 
+## 
+
+## but for that we need a fasta of our aligned, assembled transcripts.
+## I think we just have sam somewhere that maps to our luteus genome...
+
+## our merged transcripts are here:
+
+bash
+
+mergeTrans=/sciclone/data10/dthomas01/rnaseq/aligned2Mll/mergedTranscripts.gtf 
+
+
+## how can we turn this into a set of fastqs?
+
+## seems like we'll want to turn whole transcripts
+## from our gtf file of assembled transcripts, 
+## not just exons. 
+
+## can we reduce this gtf to just the transcript lines?
+
+qsub -I 
+
+bash
+
+mergeTrans=/sciclone/data10/dthomas01/rnaseq/aligned2Mll/mergedTranscripts.gtf 
+
+less $mergeTrans 
+
+head $mergeTrans 
+
+head $mergeTrans | grep "transcript\b"
+
+grep "transcript\b" $mergeTrans 
+
+grep "transcript\b" $mergeTrans > assTrans_justTrans.gtf
+
+less assTrans_justTrans.gtf
+
+## looks okay. How can we use this to make a fasta?
+
+## think we might want to install bedtools. They are most commonly 
+## used solution here.
+
+wget https://github.com/arq5x/bedtools2/releases/download/v2.28.0/bedtools
+chmod 777 /sciclone/data10/dthomas01/bedtools
+
+## needs some sort of missing compression package...
+
+## those tools are here...
+https://github.com/kobolabs/liblzma.git
+## or here:
+http://ftp.altlinux.org/pub/distributions/ALTLinux/Sisyphus/x86_64/RPMS.classic//liblzma-5.2.4-alt1.x86_64.rpm
+##i can we get our rpm to install locally?
+yum --nogpgcheck localinstall liblzma-5.2.4-alt1.x86_64.rpm
+## nope, gotta be root
+
+## from source?
+git clone https://github.com/kobolabs/liblzma.git
+
+cd /sciclone/data10/dthomas01/liblzma/
+
+./configure --prefix /sciclone/data10/dthomas01/liblzma/bin
+
+## so our liblzma.so.5 file is here:
+
+setenv lblzmaHOME /sciclone/data10/dthomas01/liblzma/
+
+setenv lblzmaHOME /sciclone/data10/dthomas01/liblzma/bin/lib
+
+setenv PATH "$lblzmaHOME":"$PATH" ## doesn't work
+
+setenv LD_LIBRARY_PATH "$lblzmaHOME":"$LD_LIBRARY_PATH"
+
+## can we ask bedtools to look here?
+setenv PATH "/usr/local/gcc-5.2.0/bin/":$PATH
+
+./bedtools
+
+## but maybe this isn't necessary...
+
+
+## can we install from source?
+wget https://github.com/arq5x/bedtools2/releases/download/v2.28.0/bedtools-2.28.0.tar.gz
+
+tar -xf bedtools-2.28.0.tar.gz
+
+setenv bedbin /sciclone/data10/dthomas01/bedtools2/bin
+
+cd /sciclone/data10/dthomas01/bedtools2
+
+## some weird links in there to nonexistent directories..
+
+## make fails
+## ugh, apparently our version of gcc is out of date. 
+
+## newer version here, can we force this?
+/usr/local/gcc-5.2.0/bin/g++
+
+setenv PATH "/usr/local/gcc-5.2.0/bin/":$PATH
+
+make
+
+## better, but still problems. We should add this 
+## line to our csrc
+
+## time to try biopython...
+
+## let's try following this blog:
+
+https://zhiganglu.com/post/py-gff2fasta/
+
+
+
+python3
+import gffutils, os
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
+from Bio import SeqIO
+
+trans="/sciclone/home20/dthomas01/data10/rnaseq/aligned2Mll/mergedTranscripts.gtf"
+lutgen="/sciclone/data10/dthomas01/rnaseq/mimluteus_genome/mimLuteus_genome.fa"
+
+## there are 33,574 genes annotated in the M. gut genome. This is less than half of the
+## number of transcript types that we have. So we'll need to somehow to document the 
+## unalign reads
+
+myGFF = trans
+myFasta = lutgen
+
+db = gffutils.create_db(myGFF, 'mimLuteus_gtfDB.db', 
+                        merge_strategy="create_unique", 
+                        keep_order=True,
+                        disable_infer_transcripts=True,
+                        )
+
+
+
+## let's try this function from the above blog:
+
+db = gffutils.FeatureDB('mimLuteus_gtfDB.db')
+
+def parent_seq(type, txtname):
+    with open(txtname, 'w') as f:
+        for p in db.features_of_type(type):
+            p_seq = p.sequence(myFasta)
+            p_seq = Seq(p_seq, generic_dna)
+            if p.strand == '-':
+                p_seq = p_seq.reverse_complement()
+            aa=('>' + p.id + '\n' + p_seq + '\n')
+            f.write(str(aa))
+
+
+## so write a file?
+
+type='transcript'
+txtname='test.fa'
+
+parent_seq(type, txtname)
+
+
+## getTranscriptSeqs.py
+####################################
+#!/sciclone/home20/dthomas01/python/bin/python3
+#PBS -l walltime=8:00:00
+#PBS -N getTranSeqs
+
+import sys
+sys.path.append('/sciclone/home20/dthomas01/python')
+import gffutils
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
+from Bio import SeqIO
+
+
+myGFF="/sciclone/home20/dthomas01/data10/rnaseq/aligned2Mll/mergedTranscripts.gtf"
+myFasta="/sciclone/data10/dthomas01/rnaseq/mimluteus_genome/mimLuteus_genome.fa"
+dbs=("/sciclone/home20/dthomas01/"
+    "data10/rnaseq/mimluteus_genome/"
+    "mimLuteus_gtfDB.db")
+type='transcript'
+txtname=("/sciclone/data10/dthomas01/"
+    "rnaseq/aligned2Mll/assTransFasta/"
+    "MimLut_mergedTranscripts.fa")
+
+db = gffutils.FeatureDB(dbs)
+
+with open(txtname, 'w') as f:
+    for p in db.features_of_type(type):
+        p_seq = p.sequence(myFasta)
+        p_seq = Seq(p_seq, generic_dna)
+        if p.strand == '-':
+            p_seq = p_seq.reverse_complement()
+        aa=('>' + p.id + '\n' + p_seq + '\n')
+        f.write(str(aa))
+
+###############################
+
+## seems to be working - how do we sanity check this?
+
+## not sure. When we actually do some of the 
+## transcript identifications, we can see if they
+## make sense.
+
+grep ">" MimLut_mergedTranscripts.fa | wc -l ## 60663 
+## is this the same number as our gtf transcripts?
+
+grep "\btranscript\b" mergedTranscripts.gtf | wc -l ## 60663, yup
+
+## keep in mind that these are exons + introns. Is this what we
+## want?
+
+## I think so. But it might also be good to have the assembled 
+## transcripts to blast again 
+
+## Let's try the gffcompare program, of our merged, assembled 
+## transcripts against the well curated mimulus guttatus genome
+
+## actually, that's not going to work. The gffcompare is 
+## mostly a check for the predicted genes against the 
+## transcripts, so I think mostly useful as a sanity check 
+## not what I need here...
+
+## can we subset to just reads that have been stastically confidentally
+## called as differentially expressed?
+
+## a smaller dataset will be useful, to make this all manageable...
+
+
+
+
+
+
+
+
+
+
+
+
+
+## and from there, we have a set of sequences for our 
+## transcripts. We want to find these sequences in our 
+## Mimulus guttatus genome ... I think we need to make 
+## a blastdb of the genome of interest. 
+
+## which one do we want? and how do we assign our 
+
+ 
