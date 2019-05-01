@@ -1349,3 +1349,52 @@ grep "\btranscript\b" mergedTranscripts.gtf | wc -l ## 60663, yup
 ## which one do we want? and how do we assign our 
 
  
+R
+
+library('DESeq2')
+library('RColorBrewer')
+
+###### if no deseq object: ######
+transCounts <- read.csv('transcript_count_matrix.csv')
+rownames(transCounts) <- transCounts$transcript_id
+transCounts$transcript_id <- NULL
+colnames(transCounts) <- c( "MnaWT", "MlvWT1", "MlvWT2", "MlvWT3", "Vr1-1a", "Vr1-3a", "Vr1-5")
+condition <- factor(c('MnaWT','WT','WT','WT','RNAi','RNAi','RNAi'))
+colData <- data.frame(row.names=colnames(transCounts), condition)
+
+dataset <- DESeqDataSetFromMatrix(countData = transCounts,
+                                  colData = colData,
+                                  design = ~condition)
+
+dds <- DESeq(dataset)
+#save(dds, file='trancsriptDESeq2object.rda')
+
+########################
+## otherwise start from here
+
+load('trancsriptDESeq2object.rda')
+
+result <- results(dds, contrast=c('condition','RNAi','WT'))
+## subset to just complete cases:
+resultComplete <- result[complete.cases(result),] 
+## let's take just the transcripts with an adjusted 
+## pval of <0.5:
+resultSig <- resultComplete[resultComplete$padj < .05,] 
+## sort by pvalue
+resultSigSort <- resultSig[order(resultSig$padj),]
+
+dim(result) ## 60663
+dim(resultSigSort) ## 1826 transcripts seem to be affected.
+
+head(resultSigSort)
+
+## get the transcript names as a text list:
+
+sink('diffexpTranscripts.txt')
+rownames(resultSigSort)
+sink()
+
+## back in shell, curate these a little:
+
+cut diffexpTranscripts.txt -d " " -f 2 | less
+
