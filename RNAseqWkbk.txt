@@ -1520,20 +1520,71 @@ setenv mgutTran "/sciclone/home20/dthomas01/data10/rnaseq/mimguttatus_genome/Mgu
 
 ## these files are small enough. Let's try on our computer.
 
-## blast binaries are here:
-blastdir="/sciclone/data10/dthomas01/ncbi-blast-2.9.0+/bin/"
-
 ## genome/transcript here:
 mgutGen="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/assembly/Mguttatus_256_v2.0.fa"
 mgutTran="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/annotation/Mguttatus_256_v2.0.transcript.fa"
 
+## diffexp sequences are here:
+diffexpTrans="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/diffexpTrans.fa"
+
 ## make the blast databases
-
 makeblastdb -in $mgutGen -parse_seqids  -dbtype nucl 
-
 makeblastdb -in $mgutTran -parse_seqids  -dbtype nucl 
 
 ## okay, can we use this to find our mlut transcripts?
 
-blastn –db nt –query nt.fsa –out results.out  
+echo $mgutGen
+
+cd /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp
+
+blastn -db $mgutGen -query $diffexpTrans -out blast2fullMgGenome_longfmt.txt &
+blastn -db $mgutGen -query $diffexpTrans -outfmt 6 -out blast2fullMgGenome_tablefmt.txt &
+blastn -db $mgutGen -query $diffexpTrans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blast2fullMgGenome_tablefmt_1hit.txt &
+
+blastn -db $mgutTran -query $diffexpTrans -out blast2MGtransc_longfmt.txt && \
+blastn -db $mgutTran -query $diffexpTrans -outfmt 6 -out blast2MGtransc_tablefmt.txt 
+blastn -db $mgutTran -query $diffexpTrans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blast2fullMgGenome_tablefmt_1hit.txt &
+
+grep "MSTRG\.72\.[0-9]" $diffexpTrans
+
+## the transcriptome2transcript results are probably the 
+## best 
+
+## did all transcripts find matches?
+
+wc -l blast2fullMgGenome_tablefmt_1hit.txt ## 1759
+## we lost some...
+
+## which ones?
+
+## these are working okay, but what's the best way to line these up?
+## cuz we got a little scripting ahead of us, I think, to use this 
+## data to get our annotations 
+## how do we check to make sure they're all good
+
+cut blast2fullMgGenome_tablefmt_1hit.txt -f 1 | uniq | wc -l
+## yeah, only one hit per
+
+## tomorrow:
+
+## focus on the transcript2transcriptome matches
+
+## remove poor matches if any
+
+
+## find out which rna transcripts didn't align to anywhere in the 
+## guttatus transcriptome 
+
+## if these poor matches and lost transcripts seem important (big fold change, etc),
+## note them, blast on genbank etc. 
+
+## write a script to make our csv with lutID, gutID, gutData, diffExp Data.
+
+####### long term #####
+
+## check mybs
+## subset to anthocyanins, do ordinations
+## identify the biggest fold changes
+
  
+
