@@ -1396,5 +1396,144 @@ sink()
 
 ## back in shell, curate these a little:
 
-cut diffexpTranscripts.txt -d " " -f 2 | less
+cut diffexpTranscripts.txt -d " " -f 1 --complement 
+## meh, just use vim
 
+## sort it:
+
+cut -d "." -f 1 --complement listTrans.txt | sort -n 
+
+cut -d "." -f 1 --complement listTrans.txt | sort -n > transNums.txt
+
+paste <(cut -d "." -f 1 listTrans.txt) transNums.txt -d . > diffexpTranscriptsSorted.txt
+
+
+## so, we got a list, can we extract these sequences from our all-genes file?
+## I think we need some python here...
+
+setenv diffTransSort "/sciclone/home20/dthomas01/data10/rnaseq/MimulusLuteus_RNAseq/diffExp/diffexpTranscriptsSorted.txt"
+
+qsub -I -l walltime=01:00:00
+
+python3
+
+########################################
+
+import sys
+sys.path.append('/sciclone/home20/dthomas01/python')
+from Bio.Seq import Seq
+from Bio.Alphabet import generic_dna
+from Bio import SeqIO
+
+diffTransSort=("/sciclone/home20/dthomas01/data10/rnaseq/"
+                "MimulusLuteus_RNAseq/diffExp/"
+                "diffexpTranscriptsSorted.txt")
+
+MluMergedTransFasta=("/sciclone/home20/dthomas01/data10/"
+                    "rnaseq/aligned2Mll/assTransFasta/"
+                    "MimLut_mergedTranscripts.fa")
+
+## make our list of upregulated genes
+## open our fasta to 
+
+with open(diffTransSort) as f:
+    diffTrans=f.readlines()
+    diffTrans = [ x.strip('\n') for x in diffTrans ]
+
+with open ('diffexpTrans.fa', 'w') as output:
+    with open(MluMergedTransFasta, "rU") as fa:
+        for record in SeqIO.parse(fa, "fasta"):
+            if record.id in diffTrans: 
+                aa=('>' + record.id + '\n' + record.seq + '\n')
+                output.write(str(aa))
+
+######################################################
+
+## seems to have worked...
+
+## so our differentially expressed transcripts now live here:
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/diffexpTrans.fa
+
+## 1826 records in that fasta. that's good. 
+
+## so next, align as many of these as possible to the 
+## mimulus genome.
+
+## but a bit confused about the tool. Is hisat appropriate 
+## here? We need a lot of sensitivity, I think we are down 
+## to where blast may be a manageable option again.
+
+## so the plan would be 
+
+## 1 install blast locally
+## 2 make a searchable database out of the mim guttatus genome
+## 3 run alignments, use the usual two outputs - one that 
+## shows the top alignment, the other that shows more, and the
+## the quality of the alignments. 
+
+## we'll use the second just for genes of high interest, to confirm
+
+## What we want here is a map of our names (MSTRG.?????) to 
+## the mim. luteus names. 
+
+## then we can use their research to fill in some of the gaps.
+
+## in general, we want to show want parts of the anthocyanin pathway
+## got shifted (if any). 
+
+## so we're gonna grab anything that says myb, anthocyanin, etc
+
+## but what this is gonna look like is grabbing all the info
+## from the Mguttatus_256_v2.0.annotation_info.txt file, with 
+## a first column showing our names, also the diffexp info 
+## (fold change, pvalues)
+
+## we'll have to script a blast search, and script the 
+## joining of the blast results to the annotation info of  
+
+## anyway, get blastn onto our workspace on the wm cluster
+
+cd /sciclone/data10/dthomas01
+
+## binaries:
+wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz
+tar -xf ncbi-blast-2.9.0+-x64-linux.tar.gz
+
+
+## not working. try source:
+wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-src.tar.gz
+
+## not working. 
+
+blastdir="/sciclone/data10/dthomas01/ncbi-blast-2.9.0+/bin/"
+
+
+## I think we want to make blast databases out of 
+## the full genome:
+#mgutGen="/sciclone/home20/dthomas01/data10/rnaseq/mimguttatus_genome/Mguttatus/v2.0/assembly/Mguttatus_256_v2.0.fa"
+setenv mgutGen "/sciclone/home20/dthomas01/data10/rnaseq/mimguttatus_genome/Mguttatus/v2.0/assembly/Mguttatus_256_v2.0.fa"
+
+## and the transcriptome, with all splice variants detected:
+#mgutTran="/sciclone/home20/dthomas01/data10/rnaseq/mimguttatus_genome/Mguttatus/v2.0/annotation/Mguttatus_256_v2.0.transcript.fa"
+setenv mgutTran "/sciclone/home20/dthomas01/data10/rnaseq/mimguttatus_genome/Mguttatus/v2.0/annotation/Mguttatus_256_v2.0.transcript.fa"
+
+
+## these files are small enough. Let's try on our computer.
+
+## blast binaries are here:
+blastdir="/sciclone/data10/dthomas01/ncbi-blast-2.9.0+/bin/"
+
+## genome/transcript here:
+mgutGen="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/assembly/Mguttatus_256_v2.0.fa"
+mgutTran="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/annotation/Mguttatus_256_v2.0.transcript.fa"
+
+## make the blast databases
+
+makeblastdb -in $mgutGen -parse_seqids  -dbtype nucl 
+
+makeblastdb -in $mgutTran -parse_seqids  -dbtype nucl 
+
+## okay, can we use this to find our mlut transcripts?
+
+blastn –db nt –query nt.fsa –out results.out  
+ 
