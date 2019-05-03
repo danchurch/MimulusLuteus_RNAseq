@@ -1355,17 +1355,20 @@ library('DESeq2')
 library('RColorBrewer')
 
 ###### if no deseq object: ######
+
+## make a df of transcript abundances without Mna:
 transCounts <- read.csv('transcript_count_matrix.csv')
 rownames(transCounts) <- transCounts$transcript_id
 transCounts$transcript_id <- NULL
 colnames(transCounts) <- c( "MnaWT", "MlvWT1", "MlvWT2", "MlvWT3", "Vr1-1a", "Vr1-3a", "Vr1-5")
-condition <- factor(c('MnaWT','WT','WT','WT','RNAi','RNAi','RNAi'))
+transCounts$MnaWT <- NULL
+## new metadata:
+condition <- factor(c('WT','WT','WT','RNAi','RNAi','RNAi'))
 colData <- data.frame(row.names=colnames(transCounts), condition)
-
+## the rest should be the same:
 dataset <- DESeqDataSetFromMatrix(countData = transCounts,
                                   colData = colData,
                                   design = ~condition)
-
 dds <- DESeq(dataset)
 #save(dds, file='trancsriptDESeq2object.rda')
 
@@ -1376,6 +1379,7 @@ load('trancsriptDESeq2object.rda')
 
 result <- results(dds, contrast=c('condition','RNAi','WT'))
 ## subset to just complete cases:
+
 resultComplete <- result[complete.cases(result),] 
 ## let's take just the transcripts with an adjusted 
 ## pval of <0.5:
@@ -1384,7 +1388,7 @@ resultSig <- resultComplete[resultComplete$padj < .05,]
 resultSigSort <- resultSig[order(resultSig$padj),]
 
 dim(result) ## 60663
-dim(resultSigSort) ## 1826 transcripts seem to be affected.
+dim(resultSigSort) ## 1145 transcripts seem to be affected.
 
 head(resultSigSort)
 
@@ -1397,16 +1401,17 @@ sink()
 ## back in shell, curate these a little:
 
 cut diffexpTranscripts.txt -d " " -f 1 --complement 
-## meh, just use vim
+## meh, just reformat with vim
 
 ## sort it:
 
-cut -d "." -f 1 --complement listTrans.txt | sort -n 
+## just checking:
+cut -d "." -f 1 --complement diffexpTranscripts.txt | sort -n | less
 
-cut -d "." -f 1 --complement listTrans.txt | sort -n > transNums.txt
+## works
+cut -d "." -f 1 --complement diffexpTranscripts.txt | sort -n > transNums.txt
 
-paste <(cut -d "." -f 1 listTrans.txt) transNums.txt -d . > diffexpTranscriptsSorted.txt
-
+paste <(cut -d "." -f 1 diffexpTranscripts.txt) transNums.txt -d . > diffexpTranscriptsSorted.txt
 
 ## so, we got a list, can we extract these sequences from our all-genes file?
 ## I think we need some python here...
@@ -1587,4 +1592,67 @@ cut blast2fullMgGenome_tablefmt_1hit.txt -f 1 | uniq | wc -l
 ## identify the biggest fold changes
 
  
+## so we're back.
+
+## just to get our head back in this, let's see if we can identify one 
+## or two of our more import expression changes:
+
+
+R
+
+library('DESeq2')
+library('RColorBrewer')
+
+wd="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp"
+
+setwd(wd)
+
+load('trancsriptDESeq2object.rda')
+
+result <- results(dds, contrast=c('condition','RNAi','WT'))
+## subset to just complete cases:
+resultComplete <- result[complete.cases(result),] 
+## let's take just the transcripts with an adjusted 
+## pval of <0.5:
+resultSig <- resultComplete[resultComplete$padj < .05,] 
+## sort by pvalue
+resultSigSort <- resultSig[order(resultSig$padj),]
+
+dim(result) ## 60663
+dim(resultSigSort) ## 1826 transcripts seem to be affected.
+
+resultFoldSort <- resultSig[order(resultSig$log2FoldChange),]
+
+
+## by fold change, these are our most important
+## down regulated transcripts:
+
+head(resultFoldSort)
+
+MSTRG.31105.6
+MSTRG.3304.2 
+MSTRG.9725.1 
+MSTRG.14318.2
+MSTRG.1193.2 
+MSTRG.8928.2 
+
+
+## let's get just the down regulated genes:
+resultSigSortOnlyDown <- resultSigSort[resultSigSort$log2FoldChange < 0,]
+
+dim(resultSigSortOnlyDown) ## 931 genes
+
+## the most statistically confident down regs (even if not as big a change:)
+
+head(resultSigSortOnlyDown) 
+
+MSTRG.15700.2
+MSTRG.21349.2
+MSTRG.16328.2
+MSTRG.27134.1
+MSTRG.8565.1 
+MSTRG.42007.2
+
+## the base mean on these is much higher. Not sure if we can trust the 
+## changes with the really small 
 

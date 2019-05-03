@@ -6,3 +6,6 @@ BAMs/
 SAMs
 .gitignore
 test.gtf
+blast2fullMgGenome_longfmt.txt
+.Rhistory
+.RData
