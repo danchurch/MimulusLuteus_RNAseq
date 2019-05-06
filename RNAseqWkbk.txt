@@ -1457,9 +1457,11 @@ with open ('diffexpTrans.fa', 'w') as output:
 ## seems to have worked...
 
 ## so our differentially expressed transcripts now live here:
-/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/diffexpTrans.fa
+ls /sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/diffexpTrans.fa -ltrh
 
-## 1826 records in that fasta. that's good. 
+cd /sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/
+
+## 1145 records in that fasta. that's good. 
 
 ## so next, align as many of these as possible to the 
 ## mimulus genome.
@@ -1504,7 +1506,6 @@ cd /sciclone/data10/dthomas01
 wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-x64-linux.tar.gz
 tar -xf ncbi-blast-2.9.0+-x64-linux.tar.gz
 
-
 ## not working. try source:
 wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.9.0+-src.tar.gz
 
@@ -1545,10 +1546,9 @@ cd /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp
 blastn -db $mgutGen -query $diffexpTrans -out blast2fullMgGenome_longfmt.txt &
 blastn -db $mgutGen -query $diffexpTrans -outfmt 6 -out blast2fullMgGenome_tablefmt.txt &
 blastn -db $mgutGen -query $diffexpTrans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blast2fullMgGenome_tablefmt_1hit.txt &
-
 blastn -db $mgutTran -query $diffexpTrans -out blast2MGtransc_longfmt.txt && \
 blastn -db $mgutTran -query $diffexpTrans -outfmt 6 -out blast2MGtransc_tablefmt.txt 
-blastn -db $mgutTran -query $diffexpTrans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blast2fullMgGenome_tablefmt_1hit.txt &
+blastn -db $mgutTran -query $diffexpTrans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blast2MGtransc_tablefmt_1hit.txt &
 
 grep "MSTRG\.72\.[0-9]" $diffexpTrans
 
@@ -1557,10 +1557,13 @@ grep "MSTRG\.72\.[0-9]" $diffexpTrans
 
 ## did all transcripts find matches?
 
-wc -l blast2fullMgGenome_tablefmt_1hit.txt ## 1759
-## we lost some...
+wc -l blast2fullMgGenome_tablefmt_1hit.txt ## 1140
 
-## which ones?
+wc -l blast2MGtransc_tablefmt_1hit.txt ## 1106
+
+## we lost a lot
+
+## which ones should we use?
 
 ## these are working okay, but what's the best way to line these up?
 ## cuz we got a little scripting ahead of us, I think, to use this 
@@ -1568,6 +1571,9 @@ wc -l blast2fullMgGenome_tablefmt_1hit.txt ## 1759
 ## how do we check to make sure they're all good
 
 cut blast2fullMgGenome_tablefmt_1hit.txt -f 1 | uniq | wc -l
+
+cut blast2MGtransc_tablefmt_1hit.txt -f 1 | uniq | wc -l
+
 ## yeah, only one hit per
 
 ## tomorrow:
@@ -1599,7 +1605,6 @@ cut blast2fullMgGenome_tablefmt_1hit.txt -f 1 | uniq | wc -l
 
 
 R
-
 library('DESeq2')
 library('RColorBrewer')
 
@@ -1619,40 +1624,290 @@ resultSig <- resultComplete[resultComplete$padj < .05,]
 resultSigSort <- resultSig[order(resultSig$padj),]
 
 dim(result) ## 60663
-dim(resultSigSort) ## 1826 transcripts seem to be affected.
+
+dim(resultSigSort) ## 1145 transcripts seem to be affected.
+
+#save(resultSigSort, file="diffExpGenes.rda") 
 
 resultFoldSort <- resultSig[order(resultSig$log2FoldChange),]
-
 
 ## by fold change, these are our most important
 ## down regulated transcripts:
 
 head(resultFoldSort)
 
-MSTRG.31105.6
-MSTRG.3304.2 
-MSTRG.9725.1 
-MSTRG.14318.2
-MSTRG.1193.2 
-MSTRG.8928.2 
+MSTRG.7537.1 
+MSTRG.7925.4 
+MSTRG.13479.2
+MSTRG.3513.6 
+MSTRG.9335.6 
+MSTRG.5749.2 
+
+
+## check for the one transcript we plotted last time:
+t1=grep('22369.1', rownames(resultFoldSort))
+resultFoldSort[t1,]
+t1name=rownames(resultFoldSort[t1,])
+plotCounts(dds, gene=t1name, intgroup="condition")
+## yeah, looks about the same, that's good.
 
 
 ## let's get just the down regulated genes:
 resultSigSortOnlyDown <- resultSigSort[resultSigSort$log2FoldChange < 0,]
 
-dim(resultSigSortOnlyDown) ## 931 genes
+dim(resultSigSortOnlyDown) ## 536 genes
 
 ## the most statistically confident down regs (even if not as big a change:)
 
 head(resultSigSortOnlyDown) 
 
-MSTRG.15700.2
-MSTRG.21349.2
-MSTRG.16328.2
-MSTRG.27134.1
-MSTRG.8565.1 
-MSTRG.42007.2
+MSTRG.22369.1
+MSTRG.35081.3
+MSTRG.10536.1
+MSTRG.1459.2 
+MSTRG.32844.3
+MSTRG.16681.2
 
-## the base mean on these is much higher. Not sure if we can trust the 
-## changes with the really small 
+
+head(resultFoldSort)
+
+head(resultSigSortOnlyDown) 
+
+any(rownames(head(resultFoldSort)) %in% rownames(head(resultSigSortOnlyDown)))
+## nothing shared there
+
+## let's take these as our first ten transcripts of interest, just to play 
+## with.
+
+## we want to get a functional discription of each - what pathways are they 
+## in and what product do they code for?
+
+## as I have it right now, the most stat sig difference is:
+
+t1name='MSTRG.22369.1'
+plotCounts(dds, gene=t1name, intgroup="condition")
+
+## what do our annotations say this is?
+## with pretty good confidence, there is a match to the following transcript:
+## in bash
+grep 'MSTRG.22369.1' blast2MGtransc_tablefmt_1hit.txt
+## and greater confidence against the genome, same gene:
+grep 'MSTRG.22369.1' blast2fullMgGenome_tablefmt_1hit.txt
+
+## not a perfect match, but what does the annotation data say about this 
+## transcript?:
+
+mgName="Migut.M00134.1"
+
+## so this gene is thought to be part of the histone deacetylase complex,
+## acetylized histones lose some of their positive charge, so acetylization
+## allows a region of DNA to be more accessible to transcription factors.
+## because it is less closely bound to a histone.
+## when histones are deacetylased they become more positively charged?, 
+## bind DNA more closely, and thus preventing transcription.
+
+## this gene is downregulated when we kill the myb5
+## which presumably lowers deactylization of some region(s), 
+## which means some regions of are being transcribed where 
+## they were not previously.
+
+## huh. Anyway, there are ~1000 of these...
+
+## here's the name of one of the domains of the myb5 in mimulus guttatus.
+
+mgName='Migut.A01129'
+
+## do we find this in our transcript that have been diffexp'd?
+
+grep $mgName blast2fullMgGenome_tablefmt_1hit.txt
+## none. This is because this is the genome, blast hits are
+## labelled in terms of location on the genome (scaffold and bp #)
+## not the annotated info
+
+grep $mgName blast2MGtransc_tablefmt_1hit.txt
+
+## several landed there. The most confident is:
+MSTRG.28668.3
+
+## back in R
+
+R
+library('DESeq2')
+library('RColorBrewer')
+
+t1=grep('28668.3', rownames(resultFoldSort))
+resultFoldSort[t1,]
+t1name=rownames(resultFoldSort[t1,])
+plotCounts(dds, gene=t1name, intgroup="condition")
+
+resultFoldSort[t1,]
+
+png('myb5_candidate.png')
+plotCounts(dds, gene=t1name, intgroup="condition")
+dev.off()
+
+## any way. that's fun, but can we make a big table 
+## to facilitate this kind of search?
+
+## so, make a big old data frame...
+
+## So... 
+
+## first, can we make a map of our names vs their names?
+
+## we have two ways of doing this, with the blast against the
+## genomes and the blast against the transcriptomes
+
+## let's start with the genomes
+
+genomeHits="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/blast2fullMgGenome_tablefmt_1hit.txt"
+transcriptHits="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/blast2MGtransc_tablefmt_1hit.txt"
+
+cd /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/
+
+head $genomeHits
+
+head $transcriptHits
+
+## so as a draft map, we want the first two columns of the transcript blast results. 
+
+## we'll curate the matches more as we hunt for genes of interest individually.
+
+## get just these...
+
+head $transcriptHits | cut -f 1,2
+
+cut $transcriptHits -f 1,2 > MSTRG2Migut.txt
+
+wc -l MSTRG2Migut.txt ## 1106 
+
+grep ">" diffexpTrans.fa | wc -l ## 1145
+
+## so we lost 39 genes...
+
+## we want to combine this our deseq data. 
+## seems like we need to sort by MSTRG name
+## and introduce NAs where there was no 
+## blast hit
+
+R
+
+library('DESeq2')
+
+setwd('/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp')
+load("diffExpGenes.rda") 
+
+
+## get our map into a dataframe:
+MSTRG2Migut <- read.delim("MSTRG2Migut.txt", head=FALSE)
+colnames(MSTRG2Migut) <- c("MSTRG","Migut")
+
+rownames(MSTRG2Migut) <- MSTRG2Migut$MSTRG
+
+#MSTRG2Migut$MSTRG <- NULL 
+## actually, let's keep em, useful later
+
+diffexp <- data.frame(resultSigSort)
+
+
+str(resultSigSort)
+
+aa <- merge(MSTRG2Migut,diffexp, by.x="row.names", by.y="row.names")
+## I think that worked. If we want to retain the genes with no blast match:
+bb <- merge(MSTRG2Migut,diffexp, by.x="row.names", by.y="row.names", all=TRUE)
+
+head(MSTRG2Migut)
+
+head(diffexp)
+
+head(aa)
+
+head(bb)
+
+## ok, merge the map with our deseq data 
+diffExp2 <- merge(MSTRG2Migut,diffexp, 
+            by.x="row.names", 
+            by.y="row.names", 
+            all=TRUE)
+
+## clean up a little
+diffExp2$MSTRG <- diffExp2$Row.names
+diffExp2$Row.names <- NULL
+rownames(diffExp2) <- diffExp2$MSTRG
+
+
+## spot checks, against our transcriptome blast results
+
+dim(diffExp2)
+
+head(diffExp2)
+
+tail(diffExp2)
+
+diffexp['MSTRG.9832.1',]
+
+aa <- diffExp2[!complete.cases(diffExp2),] 
+
+head(aa)
+
+## seems sane
+
+## and now add our annotation info?
+
+## this info is here:
+
+annote=paste0("/home/daniel/Documents/cooley_lab/",
+"Mguttatus/v2.0/annotation/",
+"Mguttatus_256_v2.0.annotation_info.txt")
+
+annoteTable <- read.delim(annote, head=TRUE)
+
+dim(annoteTable)
+
+head(annoteTable, n=2)
+
+head(diffExp2, n=2)
+
+## now can we merge these, just retaining the rows from 
+## our differentially expressed transcripts?
+
+diffExp3 <- merge(diffExp2, annoteTable,
+            by.x="Migut", 
+            by.y="transcriptName", 
+            all.x=TRUE)
+rownames(diffExp3) <- diffExp3$MSTRG
+
+## seems to have worked. Spot checks:
+
+dim(diffExp3)
+
+head(diffExp3)
+
+tail(diffExp3)
+
+head(diffExp3, n=2)
+
+colnames(diffExp3)
+
+diffexp['MSTRG.26433.1',]
+
+## just checking...in shell
+grep 'MSTRG.26433.1' blast2MGtransc_longfmt.txt -A 10
+## so yeah the unaligned hits got to the bottom here.
+
+
+for (i in colnames(diffExp3)){
+    print(i)
+    print(grep('MYB', diffExp3[,i], ignore.case=TRUE))
+    print(length(grep('MYB', diffExp3[,i], ignore.case=TRUE)))
+    }
+
+{
+
+## so we find maybe 14-15 myb genes?
+
+grep('MYB', diffExp3)
+
+grepl('arabi', diffExp3)
+
 

@@ -7,5 +7,6 @@ SAMs
 .gitignore
 test.gtf
 blast2fullMgGenome_longfmt.txt
+blast2MGtransc_longfmt.txt
 .Rhistory
 .RData
