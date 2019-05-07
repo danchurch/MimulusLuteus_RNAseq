@@ -1902,7 +1902,7 @@ for (i in colnames(diffExp3)){
     print(length(grep('MYB', diffExp3[,i], ignore.case=TRUE)))
     }
 
-{
+##{ ## just for syntax color
 
 ## so we find maybe 14-15 myb genes?
 
@@ -1910,4 +1910,76 @@ grep('MYB', diffExp3)
 
 grepl('arabi', diffExp3)
 
+## anyway, it's a start. save it
+
+diffExpMap2mGut <- diffExp3
+save(diffExpMap2mGut, file='diffExpMap2mGut.rda')
+
+
+for (i in colnames(diffExp3)){
+    print(i)
+    print(grep('MYB', diffExp3[,i], ignore.case=TRUE))
+    print(length(grep('MYB', diffExp3[,i], ignore.case=TRUE)))
+    }
+
+##{
+
+mybRowsATdef <- grep('MYB', diffExp3[,"arabi.defline"], ignore.case=TRUE)
+mybRowsATsymb <- grep('MYB', diffExp3[,"arabi.symbol"], ignore.case=TRUE)
+
+mybRowsATdef
+
+mybRowsATsymb
+
+all(mybRowsATdef %in% mybRowsATsymb) ## nope
+
+all(mybRowsATsymb %in% mybRowsATdef) ## nope
+
+ATmybs <- union(mybRowsATdef, mybRowsATsymb)
+
+
+diffExpMap2mGut[mybRows,]
+
+ATmybs <- diffExpMap2mGut[ATmybs,]
+## that's all of our transcripts that 
+## resemble the transcripts of mgut that 
+## blast well to AT mybs.
+## pretty indirect. 
+## but a first attempt to find mybs.
+## we'll also want to just blast our myb1-5 genes against these transcripts
+
+## getting lost here.
+
+## what are we trying to accomplish?
+
+## 1) check the basic enzyme coding anthocyanin pathway - can we find these genes
+## our transcriptome
+
+## 2) check for changes in non-target mybs.
+
+## #1 quick check:
+
+grep('CHS', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+##nope
+
+grep('CHS', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+## 1 
+
+grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+## lots, five 
+
+## are they all down regged?
+
+CHShit <- grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+
+diffExpMap2mGut[CHShit,]
+
+diffExpMap2mGut[CHIhit,'KO']
+
+
+grep('CHI', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+## 1 hit - 
+
+CHIhit <- grep('CHI', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+diffExpMap2mGut[CHIhit,]
 
