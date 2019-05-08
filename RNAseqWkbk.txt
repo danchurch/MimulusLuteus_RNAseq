@@ -1957,7 +1957,9 @@ ATmybs <- diffExpMap2mGut[ATmybs,]
 
 ## 2) check for changes in non-target mybs.
 
-## #1 quick check:
+## #1 first checks:
+
+############## Chalcone synthetase (CHS) #############
 
 grep('CHS', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
 ##nope
@@ -1971,15 +1973,163 @@ grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
 ## are they all down regged?
 
 CHShit <- grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+## yup
 
 diffExpMap2mGut[CHShit,]
 
 diffExpMap2mGut[CHIhit,'KO']
 
+head(diffExpMap2mGut, n=1)
+############## Chalcone synthetase (CHS) #############
+############## Chalcone isomerase (CHI) #############
 
+grep('CHI', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+## none
 grep('CHI', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
-## 1 hit - 
+## 1 hit - and not what we want
 
-CHIhit <- grep('CHI', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
-diffExpMap2mGut[CHIhit,]
+## seems like the transcript we want from mgut is:
+grep('Migut.A00065', diffExpMap2mGut[,"Migut"], ignore.case=TRUE)
+## nope
 
+## fish a little more on that, grab some copies of CHI from genbank
+## back blast
+
+############## Chalcone isomerase (CHI) #############
+
+############## Dihydroflavonal 4-reductase (DFR) #############
+
+grep('DFR', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+grep('DFR', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+
+grep('DFR', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+
+## the only entry in mgut is:
+grep('Migut.H02531.1', diffExpMap2mGut[,"Migut"], ignore.case=TRUE)
+## nope...
+## nothing found...
+## but there doesn't seem to be good coverage of that 
+## part of the pathway in mgut, so more fishing is warranted...
+
+############## Dihydroflavonal 4-reductase (DFR) #############
+
+############## Leucoanthocyanidin dioxygenase/anthocyanadin sythase #######
+
+grep('ANS', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+ANShit <- grep('ANS', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+diffExpMap2mGut[ANShit,]
+
+## same as?
+LDOXhit <- grep('LDOX', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+diffExpMap2mGut[LDOXhit,]
+
+## all down-regulated.
+############## Leucoanthocyanidin dioxygenase/anthocyanadin sythase #######
+
+##############  UDP-3-O-glucosyltransferases (UFGT) ####################
+
+grep('UFGT', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+grep('UF3GT', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
+grep('UFGT', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+grep('UF3GT', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+## nada
+
+transc <- "Migut.G01283.1"
+transc <- "Migut.I00417"
+grep(transc, diffExpMap2mGut[,"Migut"], ignore.case=TRUE)
+## nope
+
+diffExpMap2mGut[UFGT,]
+
+## only two annotations in the mgut genome for this, so may have to go 
+## fishing...
+
+## let's check our larger blast results:
+
+grep "Migut.G01283.1" blast2MGtransc_longfmt.txt
+grep "Migut.I00417" blast2MGtransc_longfmt.txt
+
+## nope...
+
+## in general, we'll probably need to blast all of our transcripts
+## against the mgut transcriptome, not just the diffExp genome...
+
+##############  UDP-3-O-glucosyltransferases (UFGT) ####################
+
+## todo: make blastable database of all luteus transcripts, to blast 
+## genes we find from elsewhere. This might plug some of the holes
+
+## todo: blast ALL, not just statistically sig transcripts, see if we can find 
+## the missing genes. 
+
+#############################################
+
+## 1 align all mlut transcripts, against mgut
+
+## for this, we have to back up, and get a full fasta of all of our transcript
+## sequences... 
+
+## It looks like we did this
+
+## where is this file?
+
+
+## here, on the cluster:
+/sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/MimLut_mergedTranscripts.fa
+## 218 mg, we can handle that...
+
+get /sciclone/data10/dthomas01/rnaseq/aligned2Mll/assTransFasta/MimLut_mergedTranscripts.fa
+
+scp dthomas01@stat.wm.edu:/home/dthomas01/MimLut_mergedTranscripts.fa .
+
+## and get our gtf, just in case:
+get /sciclone/home20/dthomas01/data10/rnaseq/aligned2Mll/mergedTranscripts.gtf
+
+scp dthomas01@stat.wm.edu:/home/dthomas01/mergedTranscripts.gtf .
+## now what? we want to align all of these against the transcriptome of mgut?
+
+## genome/transcript here:
+mgutGen="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/assembly/Mguttatus_256_v2.0.fa"
+mgutTran="/home/daniel/Documents/cooley_lab/Mguttatus/v2.0/annotation/Mguttatus_256_v2.0.transcript.fa"
+## mlut transcriptome here:
+trans="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
+
+echo $mgutGen
+
+echo $trans 
+
+
+#### done
+blastn -db $mgutGen -query $trans -out blastMlTrans2MGuGen_longfmt.txt &
+## that is taking ~1 hr, and crippling my machine. Should do this on 
+## the cluster, but can't seem to install blast on that 
+
+## don't need this, methinks
+#blastn -db $mgutGen -query $trans -outfmt 6 -out blastMlTrans2MGuGen_tablefmt.txt &
+blastn -db $mgutGen -query $trans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blastMlTrans2MGuGen_tablefmt_1hit.txt &
+
+## blastMlTrans2MGuTrans
+## these should be a little quicker?
+
+blastn -db $mgutTran -query $trans -out blastMlTrans2MGuTrans_longfmt.txt &
+
+##### todo
+
+blastn -db $mgutTran -query $trans -outfmt 6 -max_target_seqs 1 -max_hsps 1 -out blastMlTrans2MGuTrans_tablefmt_1hit.txt &
+
+
+## can we scp without wmstat?
+
+scp dthomas01@hurricane.sciclone.wm.edu:/sciclone/data10/dthomas01/rnaseq/aligned2Mll/getTranscriptSeqs.py .
+
+## nope
+
+## anyway, these all transcript blast matches now live in:
+/home/daniel/Documents/cooley_lab/allMllTranscriptBlast2Mgu
+
+blastMlTrans2MGuGen_longfmt.txt
+blastMlTrans2MGuGen_tablefmt_1hit.txt
+blastMlTrans2MGuTrans_longfmt.txt
+blastMlTrans2MGuTrans_tablefmt_1hit.txt
+
+## does 
