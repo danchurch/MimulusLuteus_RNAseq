@@ -1614,6 +1614,7 @@ setwd(wd)
 
 load('trancsriptDESeq2object.rda')
 
+
 result <- results(dds, contrast=c('condition','RNAi','WT'))
 ## subset to just complete cases:
 resultComplete <- result[complete.cases(result),] 
@@ -1913,7 +1914,7 @@ grepl('arabi', diffExp3)
 ## anyway, it's a start. save it
 
 diffExpMap2mGut <- diffExp3
-save(diffExpMap2mGut, file='diffExpMap2mGut.rda')
+#save(diffExpMap2mGut, file='diffExpMap2mGut.rda')
 
 
 for (i in colnames(diffExp3)){
@@ -1959,6 +1960,8 @@ ATmybs <- diffExpMap2mGut[ATmybs,]
 
 ## #1 first checks:
 
+load('allDiffExpAnnotated.rda')
+
 ############## Chalcone synthetase (CHS) #############
 
 grep('CHS', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
@@ -1980,6 +1983,7 @@ diffExpMap2mGut[CHShit,]
 diffExpMap2mGut[CHIhit,'KO']
 
 head(diffExpMap2mGut, n=1)
+
 ############## Chalcone synthetase (CHS) #############
 ############## Chalcone isomerase (CHI) #############
 
@@ -1992,8 +1996,28 @@ grep('CHI', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
 grep('Migut.A00065', diffExpMap2mGut[,"Migut"], ignore.case=TRUE)
 ## nope
 
-## fish a little more on that, grab some copies of CHI from genbank
-## back blast
+## fish a little more on that, 
+
+CHIsymHit <- grep('CHI', allDiffExpAnnotated[,"arabi.symbol"], ignore.case=TRUE)
+allDiffExpAnnotated[CHIsymHit,]
+
+## meh, mostly chitinas-related hits
+CHIdefHit <- grep('CHI', allDiffExpAnnotated[,"arabi.defline"], ignore.case=TRUE)
+allDiffExpAnnotated[CHIdefHit,]
+## also meh. 
+
+defHit <- grep('Chalcone|Isomerase', allDiffExpAnnotated[,"arabi.defline"], ignore.case=TRUE)
+## mostly unrelated isomerases
+
+## or keep subsetting:
+defHit <- grep('Chalcone', allDiffExpAnnotated[,"arabi.defline"], ignore.case=TRUE)
+subsetDF <- allDiffExpAnnotated[defHit,]
+defHit <- grep('isomerase', subsetDF[,"arabi.defline"], ignore.case=TRUE)
+subsetDF[defHit,]
+
+## okay, there they are. With pretty confident matches. So it seems that at least 
+## these chalcone-isomerase homologues weren't diffexpressed.
+
 
 ############## Chalcone isomerase (CHI) #############
 
@@ -2010,6 +2034,49 @@ grep('Migut.H02531.1', diffExpMap2mGut[,"Migut"], ignore.case=TRUE)
 ## nothing found...
 ## but there doesn't seem to be good coverage of that 
 ## part of the pathway in mgut, so more fishing is warranted...
+
+## so look in the larger dataframe of all transcripts blasted to
+## mgut transcriptome:
+
+hit <- grep('DFR', allDiffExpAnnotated[,"arabi.symbol"], ignore.case=TRUE)
+allDiffExpAnnotated[hit,]
+## nada
+## this enzyme is also known as FNR?
+hit <- grep('FNR', allDiffExpAnnotated[,"arabi.symbol"], ignore.case=TRUE)
+allDiffExpAnnotated[hit,]
+## nope, those are ferrodoxin reductases
+hit <- grep('DFR', allDiffExpAnnotated[,"arabi.defline"], ignore.case=TRUE)
+allDiffExpAnnotated[hit,]
+## nope
+
+
+hit <- grep('dihydroflavonol', allDiffExpAnnotated[,"arabi.defline"], ignore.case=TRUE)
+allDiffExpAnnotated[hit,]
+
+## there it is:
+MSTRG.9328.1
+
+allDiffExpAnnotated["MSTRG.9328.1",]
+
+## it escaped us because its fdr is .056, just past our cutoff
+## the bit score is a little low, 322
+
+transFasta="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
+
+grep "MSTRG.9328.1" $transFasta -A 1 > "DFRcand.da"
+
+## a genbank blast shows us that this could be something else...
+## check our new blast database of our mlv transcripts:
+
+## a list of DFR genes from other plants:
+
+mlvTran="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
+
+otherSpeciesDFR="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/findGenes/DFR/variousDFR.fa"
+
+blastn -db $mlvTran -query $otherSpeciesDFR -out "otherDFRsBlast.txt"
+
+## notta one.... suspect. 
 
 ############## Dihydroflavonal 4-reductase (DFR) #############
 
@@ -2128,8 +2195,187 @@ scp dthomas01@hurricane.sciclone.wm.edu:/sciclone/data10/dthomas01/rnaseq/aligne
 /home/daniel/Documents/cooley_lab/allMllTranscriptBlast2Mgu
 
 blastMlTrans2MGuGen_longfmt.txt
-blastMlTrans2MGuGen_tablefmt_1hit.txt
+blastMlTrans2MGuGen_tablefmt_1hit.txt ## 60117, not bad. Not sure about quality of hits
 blastMlTrans2MGuTrans_longfmt.txt
-blastMlTrans2MGuTrans_tablefmt_1hit.txt
+blastMlTrans2MGuTrans_tablefmt_1hit.txt ## 56468, also not bad.
 
-## does 
+## tomorrow, search these for the missing proteins 
+## DFR, etc, tomorrow. 
+
+## if things are still missing, look for ideas from genbank?
+
+## make a general dataframe using all transcripts, not just the sigDEGs:
+
+## we need to remake our map of mlut to mgut:
+
+genomeHits="/home/daniel/Documents/cooley_lab/allMlvTranscriptBlast2Mgu/blastMlTrans2MGuGen_tablefmt_1hit.txt"
+transcriptHits="/home/daniel/Documents/cooley_lab/allMlvTranscriptBlast2Mgu/blastMlTrans2MGuTrans_tablefmt_1hit.txt"
+transcripts="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
+
+ls $genomeHits
+ls $transcripts
+
+head $transcriptHits ## this is our map. 
+
+qseqid	sseqid	pident	length	mismatch	gapopen	qstart	qend	sstart	send	evalue	bitscore
+
+## can we insert some headers here?:
+sed '1 i\qseqid\tsseqid\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue\tbitscore' $transcriptHits > transcriptHitsHeaders.tsv
+
+cut transcriptHitsHeaders.tsv -f 1,2,3,4,5,11,12 > MSTRG2Migut.txt
+
+head MSTRG2Migut.txt 
+
+wc -l MSTRG2Migut.txt ## 56469, with header
+grep ">" $transcripts | wc -l ## 60663
+
+## use this map to make a dataframe in R:
+
+R
+
+library('DESeq2')
+
+setwd('/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/')
+
+load(file='./diffExp/trancsriptDESeq2object.rda')
+
+result <- results(dds, contrast=c('condition','RNAi','WT'))
+
+## get our map into a dataframe:
+MSTRG2Migut <- read.delim("MSTRG2Migut.txt", head=TRUE)
+colnames(MSTRG2Migut)[1] <- "MSTRG"
+colnames(MSTRG2Migut)[2] <- "Migut"
+rownames(MSTRG2Migut) <- MSTRG2Migut$MSTRG
+
+head(MSTRG2Migut)
+
+resultdf <- data.frame(result)
+
+diffExpBothNames <- merge(MSTRG2Migut, resultdf,
+                    by.x="row.names", 
+                    by.y="row.names", 
+                    all=TRUE)
+
+head(diffExpBothNames)
+
+dim(diffExpBothNames) ## 60663, all of them, awesome, but
+
+sum(complete.cases(diffExpBothNames)) ## 52831, 
+## ~8000 transcripts with some sort of missing data...
+
+## not sure. 
+
+head(diffExpBothNames) 
+
+tail(diffExpBothNames)
+
+## anyway, looks good. clean up and add annotation:
+
+diffExpBothNames$MSTRG <- diffExpBothNames$Row.names
+diffExpBothNames$Row.names <- NULL
+rownames(diffExpBothNames) <- diffExpBothNames$MSTRG
+
+aa <- diffExpBothNames[!complete.cases(diffExpBothNames),] 
+
+## yeah, 7832 with missing data. but which ones are due to non-alignment?
+
+bb <- (aa[is.na(aa$Migut),])
+
+dim(bb)
+## 4,195 genes not aligned in any way. There are probably a lot of shitty alignments 
+## in there, too...
+
+## but let's wait to filter. 
+
+## add annotation?
+
+
+annote=paste0("/home/daniel/Documents/cooley_lab/",
+"Mguttatus/v2.0/annotation/",
+"Mguttatus_256_v2.0.annotation_info.txt")
+annoteTable <- read.delim(annote, head=TRUE)
+
+dim(annoteTable)
+
+head(annoteTable, n=2)
+
+head(diffExpBothNames)
+
+allDiffExpAnnotated <- merge(diffExpBothNames, annoteTable,
+                        by.x="Migut", 
+                        by.y="transcriptName", 
+                        all.x=TRUE)
+
+rownames(allDiffExpAnnotated) <- allDiffExpAnnotated$MSTRG
+
+dim(allDiffExpAnnotated)
+
+head(allDiffExpAnnotated)
+
+tail(allDiffExpAnnotated)
+
+allDiffExpAnnotated['MSTRG.41063.1',]
+
+
+## just checking...in shell
+grep 'MSTRG.41063.1' blastMlTrans2MGuTrans_longfmt.txt -A 10
+## so yeah the unaligned hits got to the bottom here.
+
+## looks okay. Save it:
+#save(allDiffExpAnnotated, file="allDiffExpAnnotated.rda")
+
+#############################
+
+## mybs in there?
+
+for (i in colnames(allDiffExpAnnotated)){
+    print(i)
+    print(grep('MYB', allDiffExpAnnotated[,i], ignore.case=TRUE))
+    print(length(grep('MYB', allDiffExpAnnotated[,i], ignore.case=TRUE)))
+    }
+
+## { ##
+
+## lots, ~200 or so. Contrast this to our statistically significant ones
+
+sigDEG <-  allDiffExpAnnotated[allDiffExpAnnotated$padj < 0.05,]
+
+for (i in colnames(sigDEG)){
+    print(i)
+    print(grep('MYB', sigDEG[,i], ignore.case=TRUE))
+    print(length(grep('MYB', sigDEG[,i], ignore.case=TRUE)))
+    }
+
+## { ##
+
+## 14 or 15. Interesting. so we pick up maybe 200 transcripts of 
+## mybs, only 14 or 15 are differentially expressed
+
+
+sigDEG
+
+## just curious, how many of our significant DEGs 
+## aligned?
+
+sigDEGComplete <- sigDEG[complete.cases(sigDEG),] 
+
+dim(sigDEGComplete)
+## ah, so this is where we lost those mybs before. 
+
+head(sigDEGComplete)
+
+## any way, can we find our missing genes in this? back 
+## to our arielle diagram hunt
+
+
+########## back blasting the transcriptome #######
+
+## let's make a database out of our transcriptome 
+## and try blasting sequences from other studies 
+## against, see if it confirms some of our results
+## or finds missing genes...
+
+
+mlvTran="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
+
+makeblastdb -in $mlvTran -parse_seqids  -dbtype nucl 

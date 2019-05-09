@@ -1,0 +1,186 @@
+BLASTN 2.6.0+
+
+
+Reference: Zheng Zhang, Scott Schwartz, Lukas Wagner, and Webb
+Miller (2000), "A greedy algorithm for aligning DNA sequences", J
+Comput Biol 2000; 7(1-2):203-14.
+
+
+
+Database: /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscript
+s/MimLut_mergedTranscripts.fa
+           60,663 sequences; 227,497,745 total letters
+
+
+
+Query= NM_001293939.1 Malus domestica bifunctional dihydroflavonol
+4-reductase/flavanone 4-reductase (LOC103450464), mRNA
+
+Length=1047
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 230377040880
+
+
+Query= NM_001247479.1 Solanum lycopersicum dihydroflavonol 4-reductase
+(LOC544150), mRNA
+
+Length=1651
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 366472070763
+
+
+Query= NM_001305268.1 Fragaria vesca bifunctional dihydroflavonol
+4-reductase/flavanone 4-reductase (DFR), mRNA
+
+Length=1050
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 231054620412
+
+
+Query= AY648027.1 Camellia sinensis cultivar UPASI-10 dihydroflavonol
+4-reductase (dfr) mRNA, complete cds
+
+Length=1413
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 312731865685
+
+
+Query= AF026398.1 Onobrychis viciifolia dihydroflavonol 4-reductase (DFR)
+mRNA, partial cds
+
+Length=177
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 34349137840
+
+
+Query= AB011667.1 Ipomoea purpurea genes for dihydroflavonol 4-reductase,
+complete cds
+
+Length=16845
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 3793527466288
+
+
+Query= AY221250.2 Allium cepa cultivar H6 (doubled haploid line)
+dihydroflavonol 4-reductase (DFR-A) gene, DFR-A-red allele, complete
+cds
+
+Length=4295
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 963000517788
+
+
+Query= DQ084722.1 Citrus sinensis cultivar Navel dihydroflavonol
+4-reductase gene, complete cds
+
+Length=1733
+
+
+***** No hits found *****
+
+
+
+Lambda      K        H
+    1.33    0.621     1.12 
+
+Gapped
+Lambda      K        H
+    1.28    0.460    0.850 
+
+Effective search space used: 384987603605
+
+
+  Database: /home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscript
+s/MimLut_mergedTranscripts.fa
+    Posted date:  May 9, 2019  1:36 PM
+  Number of letters in database: 227,497,745
+  Number of sequences in database:  60,663
+
+
+
+Matrix: blastn matrix 1 -2
+Gap Penalties: Existence: 0, Extension: 2.5
