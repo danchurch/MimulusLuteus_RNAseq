@@ -1759,7 +1759,7 @@ dev.off()
 ## we have two ways of doing this, with the blast against the
 ## genomes and the blast against the transcriptomes
 
-## let's start with the genomes
+############### build dataframe of stat sig DEGs only ###############
 
 genomeHits="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/blast2fullMgGenome_tablefmt_1hit.txt"
 transcriptHits="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/diffExp/blast2MGtransc_tablefmt_1hit.txt"
@@ -1770,17 +1770,16 @@ head $genomeHits
 
 head $transcriptHits
 
-## so as a draft map, we want the first two columns of the transcript blast results. 
+## so as a draft map, we want the some of columns of the transcript blast results. 
 
 ## we'll curate the matches more as we hunt for genes of interest individually.
 
 ## get just these...
 
-head $transcriptHits | cut -f 1,2
+sed '1 i\qseqid\tsseqid\tpident\tlength\tmismatch\tgapopen\tqstart\tqend\tsstart\tsend\tevalue\tbitscore' $transcriptHits |\
+cut -f 1,2,3,4,5,11,12 > MSTRG2Migut.txt
 
-cut $transcriptHits -f 1,2 > MSTRG2Migut.txt
-
-wc -l MSTRG2Migut.txt ## 1106 
+wc -l MSTRG2Migut.txt ## 1106 plus header 
 
 grep ">" diffexpTrans.fa | wc -l ## 1145
 
@@ -1800,10 +1799,11 @@ load("diffExpGenes.rda")
 
 
 ## get our map into a dataframe:
-MSTRG2Migut <- read.delim("MSTRG2Migut.txt", head=FALSE)
-colnames(MSTRG2Migut) <- c("MSTRG","Migut")
+MSTRG2Migut <- read.delim("MSTRG2Migut.txt", head=TRUE)
 
-rownames(MSTRG2Migut) <- MSTRG2Migut$MSTRG
+head(MSTRG2Migut)
+
+rownames(MSTRG2Migut) <- MSTRG2Migut$qseqid
 
 #MSTRG2Migut$MSTRG <- NULL 
 ## actually, let's keep em, useful later
@@ -1814,16 +1814,15 @@ diffexp <- data.frame(resultSigSort)
 str(resultSigSort)
 
 aa <- merge(MSTRG2Migut,diffexp, by.x="row.names", by.y="row.names")
+
 ## I think that worked. If we want to retain the genes with no blast match:
 bb <- merge(MSTRG2Migut,diffexp, by.x="row.names", by.y="row.names", all=TRUE)
 
 head(MSTRG2Migut)
 
+dim(MSTRG2Migut)
+
 head(diffexp)
-
-head(aa)
-
-head(bb)
 
 ## ok, merge the map with our deseq data 
 diffExp2 <- merge(MSTRG2Migut,diffexp, 
@@ -1832,6 +1831,11 @@ diffExp2 <- merge(MSTRG2Migut,diffexp,
             all=TRUE)
 
 ## clean up a little
+
+head(diffExp2)
+
+colnames(diffExp2)[2] <- "MSTRG"
+colnames(diffExp2)[3] <- "Migut"
 diffExp2$MSTRG <- diffExp2$Row.names
 diffExp2$Row.names <- NULL
 rownames(diffExp2) <- diffExp2$MSTRG
@@ -1850,6 +1854,9 @@ diffexp['MSTRG.9832.1',]
 aa <- diffExp2[!complete.cases(diffExp2),] 
 
 head(aa)
+
+dim(aa)
+
 
 ## seems sane
 
@@ -1876,6 +1883,7 @@ diffExp3 <- merge(diffExp2, annoteTable,
             by.x="Migut", 
             by.y="transcriptName", 
             all.x=TRUE)
+
 rownames(diffExp3) <- diffExp3$MSTRG
 
 ## seems to have worked. Spot checks:
@@ -1907,14 +1915,11 @@ for (i in colnames(diffExp3)){
 
 ## so we find maybe 14-15 myb genes?
 
-grep('MYB', diffExp3)
+diffExpMap2mGut <- diffExp3
 
-grepl('arabi', diffExp3)
 
 ## anyway, it's a start. save it
-
-diffExpMap2mGut <- diffExp3
-#save(diffExpMap2mGut, file='diffExpMap2mGut.rda')
+save(diffExpMap2mGut, file='diffExpMap2mGut.rda')
 
 
 for (i in colnames(diffExp3)){
@@ -1960,7 +1965,23 @@ ATmybs <- diffExpMap2mGut[ATmybs,]
 
 ## #1 first checks:
 
-load('allDiffExpAnnotated.rda')
+########### Setup for Gene Searches ###################
+R
+library('DESeq2')
+
+## get our all transcript dataframe
+allDiffExpAnnotatedPATH <- paste0('/home/daniel/Documents/cooley_lab/',
+                            'MimulusLuteus_RNAseq/findGenes/',
+                            'allDiffExpAnnotated.rda')
+load(allDiffExpAnnotatedPATH); rm(allDiffExpAnnotatedPATH)
+
+## and our stat sig DEGs:
+diffExpMap2mGutPATH <- paste0("/home/daniel/Documents/",
+    "cooley_lab/MimulusLuteus_RNAseq/",
+    "diffExp/diffExpMap2mGut.rda")
+load(diffExpMap2mGutPATH); rm(diffExpMap2mGutPATH)
+
+## okay, that sets us up pretty well for searches:
 
 ############## Chalcone synthetase (CHS) #############
 
@@ -1971,14 +1992,15 @@ grep('CHS', diffExpMap2mGut[,"arabi.symbol"], ignore.case=TRUE)
 ## 1 
 
 grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
-## lots, five 
+## lots, six 
 
 ## are they all down regged?
 
 CHShit <- grep('Chalcone', diffExpMap2mGut[,"arabi.defline"], ignore.case=TRUE)
+diffExpMap2mGut[CHShit,]
+
 ## yup
 
-diffExpMap2mGut[CHShit,]
 
 diffExpMap2mGut[CHIhit,'KO']
 
@@ -2077,6 +2099,12 @@ otherSpeciesDFR="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/findGene
 blastn -db $mlvTran -query $otherSpeciesDFR -out "otherDFRsBlast.txt"
 
 ## notta one.... suspect. 
+
+## well, what does our plot of this gene look like?
+
+png("possibleDFR.png")
+plotCounts(dds, gene="MSTRG.9328.1", intgroup="condition")
+dev.off()
 
 ############## Dihydroflavonal 4-reductase (DFR) #############
 
@@ -2379,3 +2407,5 @@ head(sigDEGComplete)
 mlvTran="/home/daniel/Documents/cooley_lab/MimulusLuteus_RNAseq/lutTranscripts/MimLut_mergedTranscripts.fa"
 
 makeblastdb -in $mlvTran -parse_seqids  -dbtype nucl 
+
+
